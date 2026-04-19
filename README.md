@@ -15,29 +15,45 @@ Planned feature modules:
 - prayer/azan and reminders (phase 2)
 - local media/news cards (phase 3)
 
-## Why this architecture
-
-This project is intentionally modular so each feature can be built as an independent module and plugged into the main app without rewriting everything.
-
-## Tech choice (v1)
+## Stack direction
 
 - Language: Python 3.11+
-- UI: Tkinter (lightweight and included with Python)
+- GUI strategy: Qt/QML (PySide6) for a clean 1024x600 production layout
 - Data services: modular service classes (weather, GPS, time)
-- Config: environment variables via `.env`
+- Config: TOML settings + `.env` secrets
 - Tests: pytest
 
-This keeps deployment simple on Raspberry Pi 3 while still allowing advanced visuals and future migration to a web UI if needed.
+The default profile is tuned for Raspberry Pi 3:
+- basic Qt render loop
+- display-sized wallpaper derivatives instead of full-resolution originals
+- optional cached daily wallpaper downloads with local fallback
+
+## Settings-first foundation
+
+The app now supports profile-style settings from `config/settings.toml` (see `config/settings.example.toml`).
+
+Config includes:
+- app window/fullscreen sizing
+- theme + font family
+- module toggles (`clock`, `weather`, `gps`)
+- refresh intervals per module
+- fallback coordinates (defaulted to Hessigheim, Germany)
+- performance profile (`rpi3`) and wallpaper/rendering options
+
+Secrets stay in `.env` (for example `WEATHER_API_KEY`).
 
 ## Project structure
 
 ```text
 home-pi-dashboard/
+  config/
+    settings.example.toml
   docs/
     ARCHITECTURE.md
     ROADMAP.md
   src/homehub/
     main.py
+    qml_app.py
     config.py
     modules/
       clock.py
@@ -47,7 +63,9 @@ home-pi-dashboard/
       weather_service.py
       gps_service.py
     ui/
-      theme.py
+      seasonal.py
+    qml/
+      Main.qml
   tests/
     test_config.py
 ```
@@ -59,21 +77,32 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .[dev]
 cp .env.example .env
+cp config/settings.example.toml config/settings.toml
 python -m homehub.main
 ```
 
-## Raspberry Pi run mode (planned)
+Weather data is fetched live from Open-Meteo and rendered with condition-aware icon styling.
+Default style now uses the `crystal` theme and automatic seasonal visuals (spring/summer/autumn/winter).
+Real seasonal image assets are stored in `assets/seasonal/` with attribution in `assets/seasonal/ATTRIBUTION.md`.
+The app can also fetch one daily seasonal wallpaper from Wikimedia Commons into `assets/seasonal/daily/` (with per-image attribution JSON), then fall back to bundled assets when offline.
 
-- Launch full-screen at boot
-- Hide window controls/cursor
-- Refresh weather periodically
-- Offline-safe fallback for GPS/weather APIs
+## WSL GUI Run Notes
 
-## Next milestone
+Use the launcher from a normal WSL shell (do not use `sudo`):
 
-Build a polished full-screen home screen with:
-- live clock
-- date
-- city/location from GPS
-- weather summary and icon text
-- themed gradient background + readable overlays
+```bash
+cd /home/user/Workspace/home-pi-dashboard
+./scripts/run_dashboard.sh
+```
+
+If you see `libEGL`/`MESA`/`Vulkan` warnings in WSL, the app now defaults Qt to software rendering (`QT_QUICK_BACKEND=software` and `QSG_RHI_BACKEND=software`) to keep GUI rendering stable.
+
+If this is your first run:
+
+```bash
+cd /home/user/Workspace/home-pi-dashboard
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .[dev]
+./scripts/run_dashboard.sh
+```

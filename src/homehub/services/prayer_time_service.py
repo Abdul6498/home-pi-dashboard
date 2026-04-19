@@ -1,0 +1,162 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import date, datetime, timedelta
+from pathlib import Path
+import sys
+from typing import Any
+
+
+@dataclass(frozen=True)
+class PrayerStatus:
+    current_salah: str
+    next_salah: str
+    next_time_text: str
+    time_left_text: str
+
+
+class PrayerTimeService:
+    """Bridge service that reuses `azaan_clock/azan_time_reader.py` if available."""
+
+    _SALAH_KEYS = ("Fajr", "Dhuhr", "Asr", "Maghrib", "Isha")
+
+    def __init__(
+        self,
+        *,
+        city: str = "Hessigheim",
+        country: str = "Germany",
+        latitude: float | None = None,
+        longitude: float | None = None,
+    ) -> None:
+        self._city = city
+        self._country = country
+        self._latitude = latitude
+        self._longitude = longitude
+        self._client: Any | None = self._load_azan_service()
+        self._schedule_today: Any | None = None
+        self._schedule_tomorrow: Any | None = None
+        self._loaded_for_date: date | None = None
+
+    def get_status(self, now: datetime | None = None) -> PrayerStatus:
+        current_time = now or datetime.now()
+        if self._client is None:
+            return PrayerStatus(
+                current_salah="Salah unknown",
+                next_salah="N/A",
+                next_time_text="--:--",
+                time_left_text="--h --m",
+            )
+
+        self._ensure_schedules(current_time.date())
+        if self._schedule_today is None:
+            return PrayerStatus(
+                current_salah="Salah unavailable",
+                next_salah="N/A",
+                next_time_text="--:--",
+                time_left_text="--h --m",
+            )
+
+        timings = self._schedule_today.timings
+        tz_now = current_time
+        first_timing = next(iter(timings.values()), None)
+        if first_timing is not None and first_timing.tzinfo is not None and tz_now.tzinfo is None:
+            tz_now = current_time.replace(tzinfo=first_timing.tzinfo)
+
+        current_salah = self._current_salah_name(tz_now, timings)
+        next_name, next_moment = self._next_salah(tz_now)
+
+        if next_name is None or next_moment is None:
+            return PrayerStatus(
+                current_salah=current_salah,
+                next_salah="N/A",
+                next_time_text="--:--",
+                time_left_text="--h --m",
+            )
+
+        delta = next_moment - tz_now
+        if delta.total_seconds() < 0:
+            delta = timedelta(seconds=0)
+
+        return PrayerStatus(
+            current_salah=current_salah,
+            next_salah=next_name,
+            next_time_text=next_moment.strftime("%H:%M"),
+            time_left_text=self._format_duration(delta),
+        )
+
+    def _ensure_schedules(self, today: date) -> None:
+        if self._loaded_for_date == today and self._schedule_today is not None:
+            return
+
+        try:
+            self._schedule_today = self._fetch_schedule(today)
+            self._schedule_tomorrow = self._fetch_schedule(today + timedelta(days=1))
+            self._loaded_for_date = today
+        except Exception:
+            self._schedule_today = None
+            self._schedule_tomorrow = None
+            self._loaded_for_date = None
+
+    def _fetch_schedule(self, target_day: date) -> Any:
+        if self._client is None:
+            raise RuntimeError("Prayer client unavailable")
+
+        try:
+            return self._client.daily_prayer_schedule(
+                city=self._city,
+                country=self._country,
+                target_date=target_day,
+            )
+        except Exception:
+            if self._latitude is not None and self._longitude is not None:
+                return self._client.daily_prayer_schedule_by_coordinates(
+                    latitude=self._latitude,
+                    longitude=self._longitude,
+                    target_date=target_day,
+                )
+            raise
+
+    def _next_salah(self, now: datetime) -> tuple[str | None, datetime | None]:
+        today = self._schedule_today.timings if self._schedule_today else {}
+        for key in self._SALAH_KEYS:
+            moment = today.get(key)
+            if moment and moment > now:
+                return key, moment
+
+        tomorrow = self._schedule_tomorrow.timings if self._schedule_tomorrow else {}
+        fajr = tomorrow.get("Fajr")
+        if fajr:
+            return "Fajr", fajr
+        return None, None
+
+    def _current_salah_name(self, now: datetime, timings: dict[str, datetime]) -> str:
+        current = "Before Fajr"
+        for key in self._SALAH_KEYS:
+            moment = timings.get(key)
+            if moment and moment <= now:
+                current = key
+        return current
+
+    def _load_azan_service(self) -> Any | None:
+        try:
+            from azan_time_reader import AzanTimeService  # type: ignore
+            return AzanTimeService()
+        except Exception:
+            pass
+
+        workspace_module = Path("/home/user/Workspace/azaan_clock")
+        if workspace_module.exists():
+            if str(workspace_module) not in sys.path:
+                sys.path.append(str(workspace_module))
+            try:
+                from azan_time_reader import AzanTimeService  # type: ignore
+                return AzanTimeService()
+            except Exception:
+                return None
+        return None
+
+    def _format_duration(self, delta: timedelta) -> str:
+        minutes_total = int(delta.total_seconds() // 60)
+        hours = minutes_total // 60
+        minutes = minutes_total % 60
+        return f"{hours:02d}h {minutes:02d}m"

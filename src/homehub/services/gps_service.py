@@ -11,7 +11,7 @@ class GPSService:
 
     def fetch_location(self) -> dict[str, float | str]:
         return {
-            "location_name": "Fallback Location",
+            "location_name": "Hessigheim",
             "lat": self._fallback_lat,
             "lon": self._fallback_lon,
         }

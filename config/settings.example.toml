@@ -1,0 +1,33 @@
+[app]
+name = "Home Pi Dashboard"
+fullscreen = false
+width = 1024
+height = 600
+
+[theme]
+name = "crystal"
+font_family = "DejaVu Sans"
+
+[location]
+default_lat = 48.99407
+default_lon = 9.18629
+
+[modules]
+clock = true
+weather = true
+gps = true
+markets = true
+
+[refresh]
+clock_seconds = 1
+weather_seconds = 900
+gps_seconds = 90
+market_seconds = 3600
+
+[performance]
+profile = "rpi3"
+software_rendering = false
+render_loop = "basic"
+use_daily_wallpapers = true
+wallpaper_width = 1024
+wallpaper_height = 600

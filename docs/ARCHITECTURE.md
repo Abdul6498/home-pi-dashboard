@@ -13,7 +13,11 @@
 - `config.py` loads environment and app settings.
 - `modules/*` define presentation-facing modules (clock, weather, gps).
 - `services/*` define data adapters (API calls, device integrations).
-- `ui/theme.py` centralizes colors, fonts, and background presets.
+- `services/daily_seasonal_image_service.py` fetches/caches one free seasonal wallpaper per day from Wikimedia Commons.
+- `ui/palette.py` centralizes color palette presets.
+- `ui/components.py` provides reusable dashboard widget components.
+- `ui/seasonal.py` provides season-based visual accents and decorative strips.
+- `ui/backgrounds.py` loads and crops seasonal photo assets for the dashboard hero strip.
 
 ## Module contract (v1)
 
