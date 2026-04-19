@@ -11,7 +11,7 @@ class MarketPriceService:
 
     def __init__(self) -> None:
         self._headers = {
-            "User-Agent": "home-pi-dashboard/0.1 (+https://github.com/Abdul6498/home-pi-dashboard)",
+            "User-Agent": "home-pi-dashboard",
         }
 
     def fetch_prices(self) -> list[dict[str, str]]:
@@ -49,7 +49,7 @@ class MarketPriceService:
                     "section": "CRYPTO",
                     "sectionColor": "#8fd8ff",
                     "symbol": symbol,
-                    "price": f"EUR {price:,.0f}" if price >= 100 else f"EUR {price:,.2f}",
+                    "price": f"\u20ac{price:,.0f}" if price >= 100 else f"\u20ac{price:,.2f}",
                     "change": f"{change:+.1f}%",
                     "changeColor": "#8bf15e" if change >= 0 else "#ff8f8f",
                     "priceColor": "#ffe39c",
@@ -58,10 +58,18 @@ class MarketPriceService:
         return items
 
     def _fetch_stock_prices(self) -> list[dict[str, str]]:
-        symbols = ["AVGO"]
+        instruments = [
+            {"symbol": "AVGO", "label": "AVGO"},
+            {"symbol": "GOOGL", "label": "GOOGL"},
+            {"symbol": "EWG2.SG", "label": "EUWAX"},
+            {"symbol": "VVSM.DE", "label": "VANECK SEMI"},
+            {"symbol": "ISLN.L", "label": "ISH SILVER"},
+        ]
         items: list[dict[str, str]] = []
+        usd_per_eur = self._fetch_usd_per_eur()
 
-        for symbol in symbols:
+        for instrument in instruments:
+            symbol = instrument["symbol"]
             url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=1d&interval=1d"
             try:
                 request = Request(url, headers=self._headers)
@@ -75,8 +83,20 @@ class MarketPriceService:
                 return self._fallback_stock_prices()
 
             meta = result[0].get("meta", {})
-            price = float(meta.get("regularMarketPrice", 0))
-            previous_close = float(meta.get("chartPreviousClose", meta.get("previousClose", 0)))
+            currency = str(meta.get("currency", "USD")).upper()
+            price_usd = float(meta.get("regularMarketPrice", 0))
+            previous_close_usd = float(
+                meta.get("chartPreviousClose", meta.get("previousClose", 0))
+            )
+            if currency == "EUR":
+                price = price_usd
+                previous_close = previous_close_usd
+            elif currency == "USD" and usd_per_eur > 0:
+                price = price_usd / usd_per_eur
+                previous_close = previous_close_usd / usd_per_eur
+            else:
+                price = price_usd
+                previous_close = previous_close_usd
             if previous_close > 0:
                 change = ((price - previous_close) / previous_close) * 100
             else:
@@ -86,8 +106,8 @@ class MarketPriceService:
                 {
                     "section": "STOCK",
                     "sectionColor": "#ffb870",
-                    "symbol": symbol,
-                    "price": f"USD {price:,.2f}",
+                    "symbol": instrument["label"],
+                    "price": f"\u20ac{price:,.2f}",
                     "change": f"{change:+.1f}%",
                     "changeColor": "#8bf15e" if change >= 0 else "#ff8f8f",
                     "priceColor": "#ffc98b",
@@ -95,33 +115,49 @@ class MarketPriceService:
             )
         return items
 
+    def _fetch_usd_per_eur(self) -> float:
+        url = "https://query1.finance.yahoo.com/v8/finance/chart/EURUSD=X?range=1d&interval=1d"
+        try:
+            request = Request(url, headers=self._headers)
+            with urlopen(request, timeout=6) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+        except (URLError, TimeoutError, OSError, json.JSONDecodeError):
+            return 1.09
+
+        result = payload.get("chart", {}).get("result") or []
+        if not result:
+            return 1.09
+
+        meta = result[0].get("meta", {})
+        return float(meta.get("regularMarketPrice", 1.09))
+
     def _fallback_crypto_prices(self) -> list[dict[str, str]]:
         return [
             {
                 "section": "CRYPTO",
                 "sectionColor": "#8fd8ff",
                 "symbol": "BTC",
-                "price": "EUR 63,200",
-                "change": "+1.4%",
-                "changeColor": "#8bf15e",
+                "price": "N/A",
+                "change": "--",
+                "changeColor": "#9eb3c9",
                 "priceColor": "#ffe39c",
             },
             {
                 "section": "CRYPTO",
                 "sectionColor": "#8fd8ff",
                 "symbol": "ETH",
-                "price": "EUR 2,940",
-                "change": "+0.9%",
-                "changeColor": "#8bf15e",
+                "price": "N/A",
+                "change": "--",
+                "changeColor": "#9eb3c9",
                 "priceColor": "#ffe39c",
             },
             {
                 "section": "CRYPTO",
                 "sectionColor": "#8fd8ff",
                 "symbol": "SOL",
-                "price": "EUR 131",
-                "change": "-0.6%",
-                "changeColor": "#ff8f8f",
+                "price": "N/A",
+                "change": "--",
+                "changeColor": "#9eb3c9",
                 "priceColor": "#ffe39c",
             },
         ]
@@ -132,9 +168,45 @@ class MarketPriceService:
                 "section": "STOCK",
                 "sectionColor": "#ffb870",
                 "symbol": "AVGO",
-                "price": "USD 406.54",
-                "change": "+2.0%",
-                "changeColor": "#8bf15e",
+                "price": "N/A",
+                "change": "--",
+                "changeColor": "#9eb3c9",
                 "priceColor": "#ffc98b",
-            }
+            },
+            {
+                "section": "STOCK",
+                "sectionColor": "#ffb870",
+                "symbol": "GOOGL",
+                "price": "N/A",
+                "change": "--",
+                "changeColor": "#9eb3c9",
+                "priceColor": "#ffc98b",
+            },
+            {
+                "section": "STOCK",
+                "sectionColor": "#ffb870",
+                "symbol": "EUWAX",
+                "price": "N/A",
+                "change": "--",
+                "changeColor": "#9eb3c9",
+                "priceColor": "#ffc98b",
+            },
+            {
+                "section": "STOCK",
+                "sectionColor": "#ffb870",
+                "symbol": "VANECK SEMI",
+                "price": "N/A",
+                "change": "--",
+                "changeColor": "#9eb3c9",
+                "priceColor": "#ffc98b",
+            },
+            {
+                "section": "STOCK",
+                "sectionColor": "#ffb870",
+                "symbol": "ISH SILVER",
+                "price": "N/A",
+                "change": "--",
+                "changeColor": "#9eb3c9",
+                "priceColor": "#ffc98b",
+            },
         ]

@@ -22,7 +22,7 @@ markets = true
 clock_seconds = 1
 weather_seconds = 900
 gps_seconds = 90
-market_seconds = 3600
+market_seconds = 5
 
 [performance]
 profile = "rpi3"

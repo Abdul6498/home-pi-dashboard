@@ -8,18 +8,24 @@ def test_fallback_prices_shape() -> None:
     stock_items = service._fallback_stock_prices()
 
     assert [item["symbol"] for item in crypto_items] == ["BTC", "ETH", "SOL"]
-    assert [item["symbol"] for item in stock_items] == ["AVGO"]
+    assert [item["symbol"] for item in stock_items] == [
+        "AVGO",
+        "GOOGL",
+        "EUWAX",
+        "VANECK SEMI",
+        "ISH SILVER",
+    ]
 
     for item in crypto_items:
-        assert item["price"].startswith("EUR ")
+        assert item["price"] == "N/A"
         assert item["section"] in {"CRYPTO", "STOCK"}
         assert item["priceColor"].startswith("#")
-        assert item["change"].endswith("%")
+        assert item["change"] == "--"
         assert item["changeColor"].startswith("#")
 
     for item in stock_items:
-        assert item["price"].startswith("USD ")
+        assert item["price"] == "N/A"
         assert item["section"] in {"CRYPTO", "STOCK"}
         assert item["priceColor"].startswith("#")
-        assert item["change"].endswith("%")
+        assert item["change"] == "--"
         assert item["changeColor"].startswith("#")

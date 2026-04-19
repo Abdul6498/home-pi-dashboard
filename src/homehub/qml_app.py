@@ -52,9 +52,11 @@ class DashboardController(QObject):
         self.markets = MarketPriceService()
 
         self._time_text = "--:--"
+        self._seconds_text = "--"
         self._period_text = "--"
         self._weekday_text = "---"
         self._date_text = "--- --"
+        self._year_text = "----"
 
         self._weather_icon = "☁"
         self._weather_icon_color = "#68c8ff"
@@ -87,9 +89,11 @@ class DashboardController(QObject):
     def refresh(self, force: bool = False) -> None:
         clock_data = self.clock.update()
         self._time_text = clock_data.time_text
+        self._seconds_text = clock_data.seconds_text
         self._period_text = clock_data.period_text
         self._weekday_text = clock_data.weekday_text
         self._date_text = clock_data.date_text
+        self._year_text = datetime.now().strftime("%Y")
 
         interval = max(1, self.settings.refresh.clock_seconds)
         self._weather_counter += interval
@@ -192,12 +196,20 @@ class DashboardController(QObject):
         return self._period_text
 
     @Property(str, notify=dataChanged)
+    def secondsText(self) -> str:
+        return self._seconds_text
+
+    @Property(str, notify=dataChanged)
     def weekdayText(self) -> str:
         return self._weekday_text
 
     @Property(str, notify=dataChanged)
     def dateText(self) -> str:
         return self._date_text
+
+    @Property(str, notify=dataChanged)
+    def yearText(self) -> str:
+        return self._year_text
 
     @Property(str, notify=dataChanged)
     def weatherIcon(self) -> str:
