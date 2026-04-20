@@ -106,7 +106,7 @@ class DashboardController(QObject):
             self._weather_icon = icon
             self._weather_icon_color = icon_color
             self._weather_summary = weather_data.summary
-            self._temperature_text = f"{weather_data.temperature_c}C"
+            self._temperature_text = f"{weather_data.temperature_c}\N{DEGREE SIGN} C"
             self._humidity_text = f"{weather_data.humidity_pct}%"
             self._uv_text = f"UV {weather_data.uv_index}"
             self._forecast_items = [
@@ -114,8 +114,8 @@ class DashboardController(QObject):
                     "day": day.day_label,
                     "icon": day.icon,
                     "iconColor": day.icon_color,
-                    "high": f"HI {day.high_c}C",
-                    "low": f"LO {day.low_c}C",
+                    "high": f"HI {day.high_c}\N{DEGREE SIGN} C",
+                    "low": f"LO {day.low_c}\N{DEGREE SIGN} C",
                 }
                 for day in weather_data.forecast
             ]

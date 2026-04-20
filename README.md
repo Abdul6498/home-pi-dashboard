@@ -81,6 +81,50 @@ cp config/settings.example.toml config/settings.toml
 python -m homehub.main
 ```
 
+## Raspberry Pi 3 One-Step Run
+
+Before first launch on Raspberry Pi OS, install the Qt/X11 runtime packages needed by PySide6:
+
+```bash
+sudo apt update
+sudo apt install -y libxcb-cursor0 libxkbcommon-x11-0
+```
+
+If you see an error like:
+
+```text
+qt.qpa.plugin: From 6.5.0, xcb-cursor0 or libxcb-cursor0 is needed to load the Qt xcb platform plugin
+qt.qpa.plugin: Could not load the Qt platform plugin "xcb"
+```
+
+it means those packages are missing.
+
+On a Raspberry Pi 3 with Raspberry Pi OS 64-bit, you can launch the app with one script:
+
+```bash
+cd /path/to/home-pi-dashboard
+./scripts/run_on_pi3.sh
+```
+
+What this script does:
+- creates `.venv` if missing
+- installs/updates the dashboard package
+- copies `.env.example` to `.env` if needed
+- copies `config/settings.example.toml` to `config/settings.toml` if needed
+- launches the dashboard
+
+After installation, the Python package also exposes a direct command:
+
+```bash
+source .venv/bin/activate
+home-pi-dashboard
+```
+
+Important:
+- PySide6 works best on Raspberry Pi OS 64-bit
+- on 32-bit Pi OS, dependency installation may fail
+- if you want kiosk autostart later, we can wire this same launcher into `systemd`
+
 Weather data is fetched live from Open-Meteo and rendered with condition-aware icon styling.
 Default style now uses the `crystal` theme and automatic seasonal visuals (spring/summer/autumn/winter).
 Real seasonal image assets are stored in `assets/seasonal/` with attribution in `assets/seasonal/ATTRIBUTION.md`.
