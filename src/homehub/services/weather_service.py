@@ -23,7 +23,7 @@ class WeatherService:
             "current": "temperature_2m,relative_humidity_2m,weather_code",
             "daily": "temperature_2m_max,temperature_2m_min,weather_code,uv_index_max",
             "timezone": "Europe/Berlin",
-            "forecast_days": 6,
+            "forecast_days": 7,
         }
         url = f"https://api.open-meteo.com/v1/forecast?{urlencode(params)}"
 
@@ -41,7 +41,7 @@ class WeatherService:
         codes = daily.get("weather_code", [])
 
         forecast: list[dict[str, int | str]] = []
-        for idx in range(1, min(6, len(days))):
+        for idx in range(1, min(7, len(days))):
             day_label = self._format_day_label(str(days[idx]))
             forecast.append(
                 {
@@ -79,5 +79,6 @@ class WeatherService:
                 {"day_label": "WED", "weather_code": 1, "low_c": 5, "high_c": 15},
                 {"day_label": "THU", "weather_code": 2, "low_c": 6, "high_c": 16},
                 {"day_label": "FRI", "weather_code": 0, "low_c": 8, "high_c": 19},
+                {"day_label": "SAT", "weather_code": 1, "low_c": 9, "high_c": 18},
             ],
         }

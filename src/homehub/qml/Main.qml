@@ -38,14 +38,7 @@ Window {
                 Column {
                     anchors.left: parent.left
                     anchors.top: parent.top
-                    spacing: 12
-
-                    Text {
-                        text: "CRYPTO"
-                        color: "#7fdc9a"
-                        font.pixelSize: 20
-                        font.bold: true
-                    }
+                    spacing: 10
 
                     Repeater {
                         model: root.dashboardModel ? root.dashboardModel.cryptoItems : []
@@ -218,15 +211,7 @@ Window {
                 Column {
                     anchors.right: parent.right
                     anchors.top: parent.top
-                    spacing: 12
-
-                    Text {
-                        text: "STOCKS"
-                        color: "#d8b07a"
-                        font.pixelSize: 20
-                        font.bold: true
-                        horizontalAlignment: Text.AlignRight
-                    }
+                    spacing: 10
 
                     Repeater {
                         model: root.dashboardModel ? root.dashboardModel.stockItems : []
@@ -288,8 +273,8 @@ Window {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            height: 132
-            spacing: 10
+            height: 126
+            spacing: 8
 
             Repeater {
                 model: root.dashboardModel ? root.dashboardModel.forecastItems : []

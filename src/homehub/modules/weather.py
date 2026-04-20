@@ -33,7 +33,7 @@ class WeatherModule:
         )
         raw_forecast = data.get("forecast", [])
         forecast: list[ForecastDaySnapshot] = []
-        for item in raw_forecast[:5]:
+        for item in raw_forecast[:6]:
             _, _, card_icon, card_icon_color = self._style_for_code(
                 int(item.get("weather_code", 3))
             )
