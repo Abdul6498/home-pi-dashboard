@@ -157,6 +157,44 @@ Then add:
 
 That example checks every 10 minutes.
 
+## Raspberry Pi systemd Auto-Run And Auto-Update
+
+If you want this to run automatically in the background on the Pi, install the user-level `systemd` units:
+
+```bash
+cd /path/to/home-pi-dashboard
+./scripts/install_systemd_user_services.sh
+```
+
+What this sets up:
+- `home-pi-dashboard.service`
+  - keeps the dashboard running
+  - restarts it automatically if it exits
+- `home-pi-dashboard-update.service`
+  - runs the updater script once
+- `home-pi-dashboard-update.timer`
+  - checks for updates every 10 minutes
+
+Behavior:
+- the dashboard starts automatically through `systemd`
+- every 10 minutes the timer runs the updater
+- if `main` changed, the app is pulled and restarted
+- if the app is stopped for any reason, the service brings it back
+
+Useful commands:
+
+```bash
+systemctl --user status home-pi-dashboard.service
+systemctl --user restart home-pi-dashboard.service
+systemctl --user status home-pi-dashboard-update.timer
+journalctl --user -u home-pi-dashboard.service -f
+```
+
+Notes:
+- this is a user-level `systemd` setup, so it works best on a Pi desktop session with your normal user
+- it sets `DISPLAY=:0` and `XAUTHORITY=$HOME/.Xauthority` for the GUI service
+- the updater script is `systemd`-aware now, so it restarts the managed service cleanly instead of fighting it with manual background processes
+
 ## Temporary Adhan Test
 
 If you want to test adhan playback without waiting for the real prayer time, add these lines to `.env`:
