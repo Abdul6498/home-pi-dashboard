@@ -101,6 +101,12 @@ class DashboardController(QObject):
         self._market_counter = 0
         self.refresh(force=True)
 
+    def shutdown(self) -> None:
+        self._timer.stop()
+        self._active_adhan_marker = ""
+        self._post_adhan_visible_until = None
+        self.adhan_audio.stop()
+
     def refresh(self, force: bool = False) -> None:
         clock_data = self.clock.update()
         self._time_text = clock_data.time_text
@@ -362,6 +368,7 @@ def run() -> int:
     _configure_qt_backend(settings)
     app = QGuiApplication(sys.argv)
     controller = DashboardController()
+    app.aboutToQuit.connect(controller.shutdown)
 
     engine = QQmlApplicationEngine()
     engine.rootContext().setContextProperty("dashboard", controller)

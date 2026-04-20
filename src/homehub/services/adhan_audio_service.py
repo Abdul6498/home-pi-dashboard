@@ -48,8 +48,15 @@ class AdhanAudioService:
         with self._lock:
             if pygame is not None and self._mixer_ready:
                 pygame.mixer.music.stop()
+                pygame.mixer.quit()
+                self._mixer_ready = False
             if self._external_process is not None and self._external_process.poll() is None:
                 self._external_process.terminate()
+                try:
+                    self._external_process.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    self._external_process.kill()
+                    self._external_process.wait(timeout=2)
             self._external_process = None
 
     def is_playing(self) -> bool:

@@ -112,13 +112,21 @@ Window {
                     spacing: 14
 
                     Row {
-                        spacing: 10
+                        spacing: 6
                         anchors.horizontalCenter: parent.horizontalCenter
                         Text {
                             text: root.dashboardModel ? root.dashboardModel.timeText : "--:--"
                             color: "#f4f7fb"
                             font.pixelSize: 94
                             font.bold: true
+                        }
+                        Text {
+                            text: ":"
+                            color: "#d7e9f8"
+                            font.pixelSize: 34
+                            font.bold: true
+                            anchors.bottom: parent.bottom
+                            anchors.bottomMargin: 12
                         }
                         Text {
                             text: root.dashboardModel ? root.dashboardModel.secondsText : "--"
@@ -134,7 +142,7 @@ Window {
                             font.pixelSize: 26
                             font.bold: true
                             anchors.bottom: parent.bottom
-                            anchors.bottomMargin: 14
+                            anchors.bottomMargin: 13
                         }
                     }
 
