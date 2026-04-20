@@ -6,7 +6,7 @@ Window {
     id: root
     width: 1024
     height: 600
-    visible: true
+    visible: false
     color: "#020202"
     title: "Home Pi Dashboard"
     property var dashboardModel: (typeof dashboard !== "undefined" && dashboard) ? dashboard : null

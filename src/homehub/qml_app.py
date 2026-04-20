@@ -294,7 +294,11 @@ def run() -> int:
     window = engine.rootObjects()[0]
     window.setFlags(window.flags() | Qt.FramelessWindowHint)
     if settings.app.fullscreen:
+        window.setX(0)
+        window.setY(0)
         window.showFullScreen()
+    else:
+        window.show()
     return app.exec()
 
 
