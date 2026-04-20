@@ -108,33 +108,26 @@ Window {
                     Row {
                         spacing: 6
                         anchors.horizontalCenter: parent.horizontalCenter
-                        Text {
-                            text: root.dashboardModel ? root.dashboardModel.timeText : "--:--"
-                            color: "#f4f7fb"
-                            font.pixelSize: 94
-                            font.family: "DejaVu Sans Mono"
-                            font.weight: Font.Light
-                            font.letterSpacing: 1.5
+                        SevenSegmentText {
+                            value: root.dashboardModel ? root.dashboardModel.timeText : "--:--"
+                            activeColor: "#f4f7fb"
+                            inactiveColor: "#11242d"
+                            glyphWidth: 52
+                            glyphHeight: 96
+                            glyphSpacing: 6
                         }
-                        Text {
-                            text: ":"
-                            color: "#d7e9f8"
-                            font.pixelSize: 34
-                            font.family: "DejaVu Sans Mono"
-                            font.weight: Font.Light
+
+                        SevenSegmentText {
+                            value: ":" + (root.dashboardModel ? root.dashboardModel.secondsText : "--")
+                            activeColor: "#d7e9f8"
+                            inactiveColor: "#11242d"
+                            glyphWidth: 18
+                            glyphHeight: 38
+                            glyphSpacing: 4
                             anchors.bottom: parent.bottom
-                            anchors.bottomMargin: 12
+                            anchors.bottomMargin: 11
                         }
-                        Text {
-                            text: root.dashboardModel ? root.dashboardModel.secondsText : "--"
-                            color: "#d7e9f8"
-                            font.pixelSize: 34
-                            font.family: "DejaVu Sans Mono"
-                            font.weight: Font.Light
-                            font.letterSpacing: 1.2
-                            anchors.bottom: parent.bottom
-                            anchors.bottomMargin: 12
-                        }
+
                         Text {
                             text: root.dashboardModel ? root.dashboardModel.periodText : "--"
                             color: "#f4f7fb"
