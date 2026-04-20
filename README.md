@@ -132,7 +132,8 @@ cd /path/to/home-pi-dashboard
 What this script does:
 - fetches `origin/main`
 - compares your local `HEAD` to the remote branch
-- exits quietly if nothing changed
+- if nothing changed and the dashboard is already running, it exits quietly
+- if nothing changed and the dashboard is not running, it starts the dashboard
 - pulls with `--ff-only` if there is a new commit
 - stops the running dashboard process
 - restarts it through `./scripts/run_on_pi3.sh`
