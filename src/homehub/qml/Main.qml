@@ -411,4 +411,18 @@ Window {
             }
         }
     }
+
+    Rectangle {
+        anchors.fill: parent
+        color: "#f0000000"
+        visible: root.dashboardModel ? root.dashboardModel.showPostAdhanImage : false
+        z: 5
+
+        Image {
+            anchors.fill: parent
+            source: root.dashboardModel ? root.dashboardModel.postAdhanImageUrl : ""
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+        }
+    }
 }

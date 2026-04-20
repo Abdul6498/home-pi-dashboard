@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 import os
 import platform
@@ -11,6 +11,7 @@ from homehub.modules.clock import ClockModule
 from homehub.modules.gps import GPSModule
 from homehub.modules.weather import WeatherModule
 from homehub.services.daily_seasonal_image_service import DailySeasonalImageService
+from homehub.services.adhan_audio_service import AdhanAudioService
 from homehub.services.gps_service import GPSService
 from homehub.services.market_price_service import MarketPriceService
 from homehub.services.prayer_time_service import PrayerTimeService
@@ -50,6 +51,7 @@ class DashboardController(QObject):
         )
         self.daily_images = DailySeasonalImageService()
         self.markets = MarketPriceService()
+        self.adhan_audio = AdhanAudioService()
 
         self._time_text = "--:--"
         self._seconds_text = "--"
@@ -77,6 +79,10 @@ class DashboardController(QObject):
         self._crypto_items: list[dict] = []
         self._stock_items: list[dict] = []
         self._background_image_url = self._pick_background_url()
+        self._last_adhan_marker = ""
+        self._active_adhan_marker = ""
+        self._post_adhan_image_url = self._pick_post_adhan_image_url()
+        self._post_adhan_visible_until: datetime | None = None
 
         self._timer = QTimer(self)
         self._timer.timeout.connect(self.refresh)
@@ -143,6 +149,9 @@ class DashboardController(QObject):
         self._current_salah_text = prayer.current_salah.upper()
         self._next_salah_text = f"{prayer.next_salah} {prayer.next_time_text}".upper()
         self._time_left_text = f"{prayer.time_left_text} LEFT".upper()
+        now = datetime.now()
+        self._play_adhan_if_due(now)
+        self._update_post_adhan_image_state(now)
 
         self.dataChanged.emit()
 
@@ -187,6 +196,40 @@ class DashboardController(QObject):
         if condition == "storm":
             return "⚡", "#ffd34d"
         return "☁", "#68c8ff"
+
+    def _pick_post_adhan_image_url(self) -> str:
+        assets_dir = Path(__file__).resolve().parents[2] / "assets"
+        if not assets_dir.exists():
+            return ""
+        for pattern in ("*.png", "*.jpg", "*.jpeg", "*.webp"):
+            for path in sorted(assets_dir.glob(pattern)):
+                return path.resolve().as_uri()
+        for pattern in ("*.png", "*.jpg", "*.jpeg", "*.webp"):
+            for path in sorted(assets_dir.rglob(pattern)):
+                if "seasonal" in path.parts:
+                    continue
+                return path.resolve().as_uri()
+        return ""
+
+    def _play_adhan_if_due(self, now: datetime) -> None:
+        salah_name = self.prayer.due_salah_for_adhan(now)
+        if salah_name is None:
+            return
+        marker = f"{now.date().isoformat()}:{salah_name}"
+        if marker == self._last_adhan_marker:
+            return
+        if self.adhan_audio.play_for_salah(salah_name):
+            self._last_adhan_marker = marker
+            self._active_adhan_marker = marker
+
+    def _update_post_adhan_image_state(self, now: datetime) -> None:
+        if self._active_adhan_marker and not self.adhan_audio.is_playing():
+            if self._post_adhan_image_url:
+                self._post_adhan_visible_until = now + timedelta(minutes=1)
+            self._active_adhan_marker = ""
+
+        if self._post_adhan_visible_until and now >= self._post_adhan_visible_until:
+            self._post_adhan_visible_until = None
 
     @Property(str, notify=dataChanged)
     def timeText(self) -> str:
@@ -275,6 +318,18 @@ class DashboardController(QObject):
     @Property(bool, notify=dataChanged)
     def appFullscreen(self) -> bool:
         return self._app_fullscreen
+
+    @Property(str, notify=dataChanged)
+    def postAdhanImageUrl(self) -> str:
+        return self._post_adhan_image_url
+
+    @Property(bool, notify=dataChanged)
+    def showPostAdhanImage(self) -> bool:
+        return (
+            self._post_adhan_visible_until is not None
+            and datetime.now() < self._post_adhan_visible_until
+            and bool(self._post_adhan_image_url)
+        )
 
 
 def run() -> int:

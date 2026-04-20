@@ -16,7 +16,7 @@ class PrayerStatus:
 
 
 class PrayerTimeService:
-    """Bridge service that reuses `azaan_clock/azan_time_reader.py` if available."""
+    """Prayer status service backed by the bundled Aladhan client."""
 
     _SALAH_KEYS = ("Fajr", "Dhuhr", "Asr", "Maghrib", "Isha")
 
@@ -83,6 +83,32 @@ class PrayerTimeService:
             next_time_text=next_moment.strftime("%H:%M"),
             time_left_text=self._format_duration(delta),
         )
+
+    def due_salah_for_adhan(
+        self, now: datetime | None = None, *, grace_seconds: int = 50
+    ) -> str | None:
+        current_time = now or datetime.now()
+        if self._client is None:
+            return None
+
+        self._ensure_schedules(current_time.date())
+        if self._schedule_today is None:
+            return None
+
+        timings = self._schedule_today.timings
+        tz_now = current_time
+        first_timing = next(iter(timings.values()), None)
+        if first_timing is not None and first_timing.tzinfo is not None and tz_now.tzinfo is None:
+            tz_now = current_time.replace(tzinfo=first_timing.tzinfo)
+
+        for key in self._SALAH_KEYS:
+            moment = timings.get(key)
+            if not moment:
+                continue
+            delta = (tz_now - moment).total_seconds()
+            if 0 <= delta <= grace_seconds:
+                return key
+        return None
 
     def _ensure_schedules(self, today: date) -> None:
         if self._loaded_for_date == today and self._schedule_today is not None:
