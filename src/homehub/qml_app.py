@@ -63,6 +63,7 @@ class DashboardController(QObject):
 
         self._weather_icon = "☁"
         self._weather_icon_color = "#68c8ff"
+        self._weather_condition_kind = "cloudy"
         self._weather_summary = "--"
         self._temperature_text = "--C"
         self._humidity_text = "--%"
@@ -126,6 +127,7 @@ class DashboardController(QObject):
             icon, icon_color = self._icon_for_condition(weather_data.condition_kind)
             self._weather_icon = icon
             self._weather_icon_color = icon_color
+            self._weather_condition_kind = weather_data.condition_kind
             self._weather_summary = weather_data.summary
             self._temperature_text = f"{weather_data.temperature_c}\N{DEGREE SIGN} C"
             self._humidity_text = f"{weather_data.humidity_pct}%"
@@ -133,7 +135,7 @@ class DashboardController(QObject):
             self._forecast_items = [
                 {
                     "day": day.day_label,
-                    "icon": day.icon,
+                    "iconKind": day.icon_kind,
                     "iconColor": day.icon_color,
                     "high": f"HI {day.high_c}\N{DEGREE SIGN} C",
                     "low": f"LO {day.low_c}\N{DEGREE SIGN} C",
@@ -293,6 +295,10 @@ class DashboardController(QObject):
     @Property(str, notify=dataChanged)
     def weatherIconColor(self) -> str:
         return self._weather_icon_color
+
+    @Property(str, notify=dataChanged)
+    def weatherConditionKind(self) -> str:
+        return self._weather_condition_kind
 
     @Property(str, notify=dataChanged)
     def weatherSummary(self) -> str:

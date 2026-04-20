@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Window
 import QtQuick.Layouts
+import "."
 
 Window {
     id: root
@@ -159,10 +160,12 @@ Window {
                         spacing: 10
                         anchors.horizontalCenter: parent.horizontalCenter
 
-                        Text {
-                            text: root.dashboardModel ? root.dashboardModel.weatherIcon : ""
-                            color: root.dashboardModel ? root.dashboardModel.weatherIconColor : "#68c8ff"
-                            font.pixelSize: 26
+                        WeatherIcon {
+                            width: 34
+                            height: 28
+                            kind: root.dashboardModel ? root.dashboardModel.weatherConditionKind : "cloudy"
+                            primaryColor: root.dashboardModel ? root.dashboardModel.weatherIconColor : "#68c8ff"
+                            secondaryColor: "#dff1ff"
                         }
                         Text {
                             text: root.dashboardModel
@@ -298,11 +301,13 @@ Window {
                             font.bold: true
                             horizontalAlignment: Text.AlignHCenter
                         }
-                        Text {
-                            text: modelData.icon
-                            color: modelData.iconColor
-                            font.pixelSize: 28
-                            horizontalAlignment: Text.AlignHCenter
+                        WeatherIcon {
+                            width: 34
+                            height: 26
+                            kind: modelData.iconKind || "cloudy"
+                            primaryColor: modelData.iconColor || "#68c8ff"
+                            secondaryColor: "#dff1ff"
+                            anchors.horizontalCenter: parent.horizontalCenter
                         }
                         Text {
                             text: modelData.high

@@ -6,7 +6,7 @@ from homehub.services.weather_service import WeatherService
 @dataclass
 class ForecastDaySnapshot:
     day_label: str
-    icon: str
+    icon_kind: str
     icon_color: str
     low_c: int
     high_c: int
@@ -28,19 +28,19 @@ class WeatherModule:
 
     def update(self) -> WeatherSnapshot:
         data = self._service.fetch_current()
-        condition_kind, summary, icon, icon_color = self._style_for_code(
+        condition_kind, summary, _, icon_color = self._style_for_code(
             int(data.get("weather_code", 3))
         )
         raw_forecast = data.get("forecast", [])
         forecast: list[ForecastDaySnapshot] = []
         for item in raw_forecast[:6]:
-            _, _, card_icon, card_icon_color = self._style_for_code(
+            card_kind, _, _, card_icon_color = self._style_for_code(
                 int(item.get("weather_code", 3))
             )
             forecast.append(
                 ForecastDaySnapshot(
                     day_label=str(item.get("day_label", "--")),
-                    icon=card_icon,
+                    icon_kind=card_kind,
                     icon_color=card_icon_color,
                     low_c=int(item.get("low_c", 0)),
                     high_c=int(item.get("high_c", 0)),
