@@ -1,0 +1,62 @@
+{
+  "crypto": [
+    {
+      "symbol": "BTC",
+      "provider_id": "bitcoin",
+      "section": "CRYPTO",
+      "sectionColor": "#8fd8ff",
+      "priceColor": "#ffe39c"
+    },
+    {
+      "symbol": "ETH",
+      "provider_id": "ethereum",
+      "section": "CRYPTO",
+      "sectionColor": "#8fd8ff",
+      "priceColor": "#ffe39c"
+    },
+    {
+      "symbol": "SOL",
+      "provider_id": "solana",
+      "section": "CRYPTO",
+      "sectionColor": "#8fd8ff",
+      "priceColor": "#ffe39c"
+    }
+  ],
+  "stocks": [
+    {
+      "symbol": "AVGO",
+      "provider_id": "AVGO",
+      "section": "STOCK",
+      "sectionColor": "#ffb870",
+      "priceColor": "#ffc98b"
+    },
+    {
+      "symbol": "GOOGL",
+      "provider_id": "GOOGL",
+      "section": "STOCK",
+      "sectionColor": "#ffb870",
+      "priceColor": "#ffc98b"
+    },
+    {
+      "symbol": "EUWAX",
+      "provider_id": "EWG2.SG",
+      "section": "STOCK",
+      "sectionColor": "#ffb870",
+      "priceColor": "#ffc98b"
+    },
+    {
+      "symbol": "VANECK SEMI",
+      "provider_id": "VVSM.DE",
+      "section": "STOCK",
+      "sectionColor": "#ffb870",
+      "priceColor": "#ffc98b"
+    },
+    {
+      "symbol": "ISH SILVER",
+      "provider_id": "ISLN.L",
+      "section": "STOCK",
+      "sectionColor": "#ffb870",
+      "priceColor": "#ffc98b"
+    }
+  ]
+}

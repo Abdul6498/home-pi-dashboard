@@ -29,3 +29,20 @@ def test_fallback_prices_shape() -> None:
         assert item["priceColor"].startswith("#")
         assert item["change"] == "--"
         assert item["changeColor"].startswith("#")
+
+
+def test_market_config_is_loaded_from_json() -> None:
+    service = MarketPriceService()
+
+    crypto = service._crypto_definitions()  # noqa: SLF001
+    stocks = service._stock_definitions()  # noqa: SLF001
+
+    assert [item["symbol"] for item in crypto] == ["BTC", "ETH", "SOL"]
+    assert [item["provider_id"] for item in crypto] == ["bitcoin", "ethereum", "solana"]
+    assert [item["symbol"] for item in stocks] == [
+        "AVGO",
+        "GOOGL",
+        "EUWAX",
+        "VANECK SEMI",
+        "ISH SILVER",
+    ]

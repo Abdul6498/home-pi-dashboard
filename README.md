@@ -120,6 +120,42 @@ source .venv/bin/activate
 home-pi-dashboard
 ```
 
+## Raspberry Pi Auto-Update And Restart
+
+If you want the Pi to check `main`, pull updates, stop the running dashboard, and start it again, use:
+
+```bash
+cd /path/to/home-pi-dashboard
+./scripts/update_and_restart_on_pi.sh
+```
+
+What this script does:
+- fetches `origin/main`
+- compares your local `HEAD` to the remote branch
+- exits quietly if nothing changed
+- pulls with `--ff-only` if there is a new commit
+- stops the running dashboard process
+- restarts it through `./scripts/run_on_pi3.sh`
+
+Important:
+- it refuses to auto-pull if you have local tracked changes
+- it ignores untracked files, so generated caches do not block updates
+- if `DISPLAY` is not set, it defaults to `:0`, which matches most Raspberry Pi desktop sessions
+
+If you want the Pi to check periodically, add a cron entry like this:
+
+```bash
+crontab -e
+```
+
+Then add:
+
+```cron
+*/10 * * * * cd /path/to/home-pi-dashboard && ./scripts/update_and_restart_on_pi.sh >> /path/to/home-pi-dashboard/.runtime/update.log 2>&1
+```
+
+That example checks every 10 minutes.
+
 ## Temporary Adhan Test
 
 If you want to test adhan playback without waiting for the real prayer time, add these lines to `.env`:

@@ -51,7 +51,7 @@ Window {
                         model: root.dashboardModel ? root.dashboardModel.cryptoItems : []
                         delegate: Rectangle {
                             width: 230
-                            height: 70
+                            height: 78
                             radius: 24
                             color: "#20ffffff"
                             border.width: 1
@@ -70,7 +70,7 @@ Window {
                                     font.bold: true
                                     anchors.left: parent.left
                                     anchors.top: parent.top
-                                    anchors.topMargin: 14
+                                    anchors.topMargin: 13
                                 }
                                 Text {
                                     text: modelData.price
@@ -81,18 +81,18 @@ Window {
                                     anchors.leftMargin: 6
                                     anchors.right: parent.right
                                     anchors.top: parent.top
-                                    anchors.topMargin: 14
+                                    anchors.topMargin: 13
                                     elide: Text.ElideRight
                                 }
                                 Text {
                                     id: changeText
                                     text: modelData.change
                                     color: modelData.changeColor
-                                    font.pixelSize: 11
+                                    font.pixelSize: 15
                                     font.bold: true
                                     anchors.left: parent.left
                                     anchors.top: symbolText.bottom
-                                    anchors.topMargin: 4
+                                    anchors.topMargin: 8
                                 }
                             }
                         }
@@ -118,13 +118,16 @@ Window {
                             text: root.dashboardModel ? root.dashboardModel.timeText : "--:--"
                             color: "#f4f7fb"
                             font.pixelSize: 94
-                            font.bold: true
+                            font.family: "DejaVu Sans Mono"
+                            font.weight: Font.Light
+                            font.letterSpacing: 1.5
                         }
                         Text {
                             text: ":"
                             color: "#d7e9f8"
                             font.pixelSize: 34
-                            font.bold: true
+                            font.family: "DejaVu Sans Mono"
+                            font.weight: Font.Light
                             anchors.bottom: parent.bottom
                             anchors.bottomMargin: 12
                         }
@@ -132,7 +135,9 @@ Window {
                             text: root.dashboardModel ? root.dashboardModel.secondsText : "--"
                             color: "#d7e9f8"
                             font.pixelSize: 34
-                            font.bold: true
+                            font.family: "DejaVu Sans Mono"
+                            font.weight: Font.Light
+                            font.letterSpacing: 1.2
                             anchors.bottom: parent.bottom
                             anchors.bottomMargin: 12
                         }
@@ -140,7 +145,8 @@ Window {
                             text: root.dashboardModel ? root.dashboardModel.periodText : "--"
                             color: "#f4f7fb"
                             font.pixelSize: 26
-                            font.bold: true
+                            font.family: "DejaVu Sans Mono"
+                            font.weight: Font.Light
                             anchors.bottom: parent.bottom
                             anchors.bottomMargin: 13
                         }
@@ -226,7 +232,7 @@ Window {
                         model: root.dashboardModel ? root.dashboardModel.stockItems : []
                         delegate: Rectangle {
                             width: 230
-                            height: 64
+                            height: 72
                             radius: 24
                             color: "#20ffffff"
                             border.width: 1
@@ -264,11 +270,11 @@ Window {
                                     id: stockChangeText
                                     text: modelData.change
                                     color: modelData.changeColor
-                                    font.pixelSize: 9
+                                    font.pixelSize: 14
                                     font.bold: true
                                     anchors.left: parent.left
                                     anchors.top: stockSymbolText.bottom
-                                    anchors.topMargin: 4
+                                    anchors.topMargin: 7
                                 }
                             }
                         }
@@ -315,14 +321,14 @@ Window {
                         }
                         Text {
                             text: modelData.high
-                            color: "#ffaf8d"
+                            color: "#b8704f"
                             font.pixelSize: 16
                             font.bold: true
                             horizontalAlignment: Text.AlignHCenter
                         }
                         Text {
                             text: modelData.low
-                            color: "#61d1ff"
+                            color: "#4d8fae"
                             font.pixelSize: 16
                             font.bold: true
                             horizontalAlignment: Text.AlignHCenter
