@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from pathlib import Path
-import sys
 from typing import Any
+
+from homehub.services.aladhan_client import AzanTimeService
 
 
 @dataclass(frozen=True)
@@ -139,21 +139,9 @@ class PrayerTimeService:
 
     def _load_azan_service(self) -> Any | None:
         try:
-            from azan_time_reader import AzanTimeService  # type: ignore
             return AzanTimeService()
         except Exception:
-            pass
-
-        workspace_module = Path("/home/user/Workspace/azaan_clock")
-        if workspace_module.exists():
-            if str(workspace_module) not in sys.path:
-                sys.path.append(str(workspace_module))
-            try:
-                from azan_time_reader import AzanTimeService  # type: ignore
-                return AzanTimeService()
-            except Exception:
-                return None
-        return None
+            return None
 
     def _format_duration(self, delta: timedelta) -> str:
         minutes_total = int(delta.total_seconds() // 60)

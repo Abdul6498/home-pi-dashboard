@@ -19,7 +19,7 @@ from homehub.ui.backgrounds import bundled_background_path, prepare_background_a
 from homehub.ui.seasonal import season_for_now
 
 try:
-    from PySide6.QtCore import QObject, Property, QTimer, Signal
+    from PySide6.QtCore import QObject, Property, QTimer, Signal, Qt
     from PySide6.QtGui import QGuiApplication
     from PySide6.QtQml import QQmlApplicationEngine
 except ModuleNotFoundError as exc:  # pragma: no cover
@@ -57,6 +57,7 @@ class DashboardController(QObject):
         self._weekday_text = "---"
         self._date_text = "--- --"
         self._year_text = "----"
+        self._app_fullscreen = self.settings.app.fullscreen
 
         self._weather_icon = "☁"
         self._weather_icon_color = "#68c8ff"
@@ -271,6 +272,10 @@ class DashboardController(QObject):
     def backgroundImageUrl(self) -> str:
         return self._background_image_url
 
+    @Property(bool, notify=dataChanged)
+    def appFullscreen(self) -> bool:
+        return self._app_fullscreen
+
 
 def run() -> int:
     settings = load_settings()
@@ -286,12 +291,18 @@ def run() -> int:
 
     if not engine.rootObjects():
         return 1
+    window = engine.rootObjects()[0]
+    window.setFlags(window.flags() | Qt.FramelessWindowHint)
+    if settings.app.fullscreen:
+        window.showFullScreen()
     return app.exec()
 
 
 def _configure_qt_backend(settings) -> None:
     # Use conservative defaults for Pi-class hardware while forcing software mode on WSL.
     is_wsl = "microsoft" in platform.release().lower()
+    os.environ.setdefault("NO_AT_BRIDGE", "1")
+    os.environ.setdefault("QT_LINUX_ACCESSIBILITY_ALWAYS_OFF", "1")
     if is_wsl or settings.performance.software_rendering:
         os.environ.setdefault("QT_QUICK_BACKEND", "software")
         os.environ.setdefault("QSG_RHI_BACKEND", "software")

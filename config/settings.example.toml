@@ -1,6 +1,6 @@
 [app]
 name = "Home Pi Dashboard"
-fullscreen = false
+fullscreen = true
 width = 1024
 height = 600
 

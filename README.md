@@ -124,6 +124,22 @@ Important:
 - PySide6 works best on Raspberry Pi OS 64-bit
 - on 32-bit Pi OS, dependency installation may fail
 - if you want kiosk autostart later, we can wire this same launcher into `systemd`
+- the Pi launcher now runs the app frameless, and fullscreen is enabled by default in `config/settings.example.toml`
+
+## Raspberry Pi App Install
+
+If you want a simple app-style command and desktop entry on the Pi:
+
+```bash
+cd /path/to/home-pi-dashboard
+./scripts/install_pi_app.sh
+```
+
+This creates:
+- `~/.local/bin/home-pi-dashboard`
+- `~/.local/share/applications/home-pi-dashboard.desktop`
+
+The salah/prayer-time code is now bundled inside this repository, so the Pi app no longer depends on the separate `azaan_clock` project.
 
 Weather data is fetched live from Open-Meteo and rendered with condition-aware icon styling.
 Default style now uses the `crystal` theme and automatic seasonal visuals (spring/summer/autumn/winter).
