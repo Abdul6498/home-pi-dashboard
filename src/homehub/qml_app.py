@@ -83,6 +83,14 @@ class DashboardController(QObject):
         self._active_adhan_marker = ""
         self._post_adhan_image_url = self._pick_post_adhan_image_url()
         self._post_adhan_visible_until: datetime | None = None
+        # Temporary startup-triggered adhan test for Pi verification.
+        # Enable via .env and remove/disable after confirming playback works.
+        self._test_adhan_after_seconds = max(
+            0, int(os.getenv("HH_TEST_ADHAN_AFTER_SECONDS", "0") or "0")
+        )
+        self._test_adhan_salah = os.getenv("HH_TEST_ADHAN_SALAH", "Fajr").strip() or "Fajr"
+        self._test_adhan_triggered = False
+        self._started_at = datetime.now()
 
         self._timer = QTimer(self)
         self._timer.timeout.connect(self.refresh)
@@ -150,6 +158,7 @@ class DashboardController(QObject):
         self._next_salah_text = f"{prayer.next_salah} {prayer.next_time_text}".upper()
         self._time_left_text = f"{prayer.time_left_text} LEFT".upper()
         now = datetime.now()
+        self._play_test_adhan_if_due(now)
         self._play_adhan_if_due(now)
         self._update_post_adhan_image_state(now)
 
@@ -198,18 +207,34 @@ class DashboardController(QObject):
         return "☁", "#68c8ff"
 
     def _pick_post_adhan_image_url(self) -> str:
-        assets_dir = Path(__file__).resolve().parents[2] / "assets"
-        if not assets_dir.exists():
-            return ""
-        for pattern in ("*.png", "*.jpg", "*.jpeg", "*.webp"):
-            for path in sorted(assets_dir.glob(pattern)):
-                return path.resolve().as_uri()
-        for pattern in ("*.png", "*.jpg", "*.jpeg", "*.webp"):
-            for path in sorted(assets_dir.rglob(pattern)):
-                if "seasonal" in path.parts:
-                    continue
-                return path.resolve().as_uri()
+        asset_roots = [
+            Path(__file__).resolve().parents[1] / "assets",
+            Path(__file__).resolve().parents[2] / "assets",
+        ]
+        for assets_dir in asset_roots:
+            if not assets_dir.exists():
+                continue
+            for pattern in ("*.png", "*.jpg", "*.jpeg", "*.webp"):
+                for path in sorted(assets_dir.glob(pattern)):
+                    return path.resolve().as_uri()
+            for pattern in ("*.png", "*.jpg", "*.jpeg", "*.webp"):
+                for path in sorted(assets_dir.rglob(pattern)):
+                    if "seasonal" in path.parts:
+                        continue
+                    return path.resolve().as_uri()
         return ""
+
+    def _play_test_adhan_if_due(self, now: datetime) -> None:
+        if self._test_adhan_triggered or self._test_adhan_after_seconds <= 0:
+            return
+        if (now - self._started_at).total_seconds() < self._test_adhan_after_seconds:
+            return
+        salah_name = self._test_adhan_salah
+        marker = f"test:{now.date().isoformat()}:{salah_name}"
+        if self.adhan_audio.play_for_salah(salah_name):
+            self._last_adhan_marker = marker
+            self._active_adhan_marker = marker
+        self._test_adhan_triggered = True
 
     def _play_adhan_if_due(self, now: datetime) -> None:
         salah_name = self.prayer.due_salah_for_adhan(now)

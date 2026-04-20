@@ -85,7 +85,7 @@ class PrayerTimeService:
         )
 
     def due_salah_for_adhan(
-        self, now: datetime | None = None, *, grace_seconds: int = 50
+        self, now: datetime | None = None, *, grace_seconds: int = 120
     ) -> str | None:
         current_time = now or datetime.now()
         if self._client is None:

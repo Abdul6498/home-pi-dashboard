@@ -23,6 +23,12 @@ if command -v dpkg >/dev/null 2>&1; then
     echo "  sudo apt update && sudo apt install -y ${missing_packages[*]}"
     exit 1
   fi
+
+  if ! command -v mpg123 >/dev/null 2>&1 && ! command -v ffplay >/dev/null 2>&1 && ! command -v cvlc >/dev/null 2>&1; then
+    echo "Note: no fallback audio player was found."
+    echo "If adhan audio does not play reliably, install one with:"
+    echo "  sudo apt update && sudo apt install -y mpg123"
+  fi
 fi
 
 ARCH="$(uname -m)"

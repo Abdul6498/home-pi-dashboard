@@ -120,6 +120,25 @@ source .venv/bin/activate
 home-pi-dashboard
 ```
 
+## Temporary Adhan Test
+
+If you want to test adhan playback without waiting for the real prayer time, add these lines to `.env`:
+
+```bash
+HH_TEST_ADHAN_AFTER_SECONDS=15
+HH_TEST_ADHAN_SALAH=Fajr
+```
+
+That will:
+- wait 15 seconds after app startup
+- play the Fajr adhan
+- show the post-adhan image for 1 minute after playback finishes
+
+Important:
+- this is test-only behavior
+- remove or comment these lines again after testing so the dashboard returns to normal prayer-time triggering
+- the same keys are included as commented examples in `.env.example`
+
 Important:
 - PySide6 works best on Raspberry Pi OS 64-bit
 - on 32-bit Pi OS, dependency installation may fail
