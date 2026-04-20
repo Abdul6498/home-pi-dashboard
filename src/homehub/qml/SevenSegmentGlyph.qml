@@ -5,9 +5,9 @@ Item {
     property string character: "0"
     property color activeColor: "#f4f7fb"
     property color inactiveColor: "#16303b"
-    property real segmentThickness: Math.max(2, width * 0.11)
-    property real horizontalLength: Math.max(4, width - segmentThickness * 2.2)
-    property real verticalLength: Math.max(4, (height - segmentThickness * 3.4) / 2)
+    property real segmentThickness: Math.max(3, width * 0.16)
+    property real horizontalLength: Math.max(4, width - segmentThickness * 1.8)
+    property real verticalLength: Math.max(4, (height - segmentThickness * 3.1) / 2)
 
     implicitWidth: character === ":" ? 18 : 54
     implicitHeight: 96

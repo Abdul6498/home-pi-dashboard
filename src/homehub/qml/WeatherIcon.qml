@@ -10,6 +10,7 @@ Item {
     implicitHeight: 28
 
     Canvas {
+        id: iconCanvas
         anchors.fill: parent
         antialiasing: true
 
@@ -154,9 +155,9 @@ Item {
 
         Connections {
             target: root
-            function onKindChanged() { parent.requestPaint() }
-            function onPrimaryColorChanged() { parent.requestPaint() }
-            function onSecondaryColorChanged() { parent.requestPaint() }
+            function onKindChanged() { iconCanvas.requestPaint() }
+            function onPrimaryColorChanged() { iconCanvas.requestPaint() }
+            function onSecondaryColorChanged() { iconCanvas.requestPaint() }
         }
     }
 }
