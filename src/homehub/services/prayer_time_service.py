@@ -34,6 +34,7 @@ class PrayerTimeService:
         self._latitude = latitude
         self._longitude = longitude
         self._client: Any | None = self._load_azan_service()
+        self._schedule_yesterday: Any | None = None
         self._schedule_today: Any | None = None
         self._schedule_tomorrow: Any | None = None
         self._loaded_for_date: date | None = None
@@ -66,6 +67,18 @@ class PrayerTimeService:
             tz_now = current_time.replace(tzinfo=first_timing.tzinfo)
 
         current_salah = self._current_salah_name(tz_now, timings)
+        current_window = self._current_window(tz_now)
+
+        if current_window is not None:
+            current_name, current_start, current_end = current_window
+            delta = max(current_end - tz_now, timedelta(seconds=0))
+            return PrayerStatus(
+                current_salah=current_name,
+                next_salah=current_name,
+                next_time_text=current_start.strftime("%I:%M %p"),
+                time_left_text=self._format_duration(delta),
+            )
+
         next_name, next_moment = self._next_salah(tz_now)
 
         if next_name is None or next_moment is None:
@@ -111,7 +124,7 @@ class PrayerTimeService:
             tz_now = current_time.replace(tzinfo=first_timing.tzinfo)
 
         for key in self._SALAH_KEYS:
-            moment = timings.get(key)
+            moment = self._adhan_trigger_moment(key)
             if not moment:
                 continue
             delta = (tz_now - moment).total_seconds()
@@ -123,6 +136,7 @@ class PrayerTimeService:
         today = current_time.date()
         if (
             self._loaded_for_date == today
+            and self._schedule_yesterday is not None
             and self._schedule_today is not None
             and self._schedule_tomorrow is not None
             and not self._refresh_overdue(current_time)
@@ -130,11 +144,13 @@ class PrayerTimeService:
             return
 
         try:
+            self._schedule_yesterday = self._fetch_schedule(today - timedelta(days=1))
             self._schedule_today = self._fetch_schedule(today)
             self._schedule_tomorrow = self._fetch_schedule(today + timedelta(days=1))
             self._loaded_for_date = today
             self._last_refresh_at = current_time
         except Exception:
+            self._schedule_yesterday = None
             self._schedule_today = None
             self._schedule_tomorrow = None
             self._loaded_for_date = None
@@ -171,6 +187,47 @@ class PrayerTimeService:
         if fajr:
             return "Fajr", fajr
         return None, None
+
+    def _current_window(self, now: datetime) -> tuple[str, datetime, datetime] | None:
+        yesterday = self._schedule_yesterday.timings if self._schedule_yesterday else {}
+        today = self._schedule_today.timings if self._schedule_today else {}
+        tomorrow = self._schedule_tomorrow.timings if self._schedule_tomorrow else {}
+        yesterday_isha = yesterday.get("Isha") or self._project_previous_day_time(today.get("Isha"))
+        next_imsak = tomorrow.get("Imsak") or self._project_next_day_time(today.get("Imsak"))
+
+        windows: list[tuple[str, datetime | None, datetime | None]] = [
+            ("Isha", yesterday_isha, today.get("Imsak")),
+            ("Fajr", today.get("Fajr"), today.get("Sunrise")),
+            ("Dhuhr", today.get("Dhuhr"), today.get("Asr")),
+            ("Asr", today.get("Asr"), today.get("Maghrib")),
+            ("Maghrib", today.get("Maghrib"), today.get("Isha")),
+            ("Isha", today.get("Isha"), next_imsak),
+        ]
+
+        for name, start, end in windows:
+            if start is None or end is None:
+                continue
+            if start <= now < end:
+                return (name, start, end)
+        return None
+
+    def _adhan_trigger_moment(self, salah_name: str) -> datetime | None:
+        today = self._schedule_today.timings if self._schedule_today else {}
+        if salah_name == "Fajr":
+            sunrise = today.get("Sunrise")
+            if sunrise is not None:
+                return sunrise - timedelta(minutes=30)
+        return today.get(salah_name)
+
+    def _project_previous_day_time(self, moment: datetime | None) -> datetime | None:
+        if moment is None:
+            return None
+        return moment - timedelta(days=1)
+
+    def _project_next_day_time(self, moment: datetime | None) -> datetime | None:
+        if moment is None:
+            return None
+        return moment + timedelta(days=1)
 
     def _normalize_future_moment(self, moment: datetime, reference: datetime) -> datetime:
         adjusted = moment
@@ -221,6 +278,10 @@ class PrayerTimeService:
         return combined
 
     def _current_salah_name(self, now: datetime, timings: dict[str, datetime]) -> str:
+        current_window = self._current_window(now)
+        if current_window is not None:
+            return current_window[0]
+
         current = "Before Fajr"
         for key in self._SALAH_KEYS:
             moment = timings.get(key)
