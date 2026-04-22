@@ -79,7 +79,7 @@ class DashboardController(QObject):
         self._time_left_text = "--H --M"
         self._current_salah_text = "--"
         self._prayer_alert_threshold_minutes = max(
-            1, int(os.getenv("HH_PRAYER_ALERT_MINUTES", "15") or "15")
+            1, int(os.getenv("HH_PRAYER_ALERT_MINUTES", "10") or "10")
         )
         self._force_prayer_alert = (
             os.getenv("HH_FORCE_PRAYER_ALERT", "").strip().lower() in {"1", "true", "yes", "on"}
@@ -88,7 +88,8 @@ class DashboardController(QObject):
         self._prayer_alert_marker = ""
         self._dismissed_prayer_alert_marker = ""
         self._auto_closed_prayer_alert_marker = ""
-        self._missed_prayer_count = 1
+        self._missed_prayer_count = 0
+        self._isha_nightly_alert_marker = ""
 
         self._forecast_items: list[dict] = []
         self._market_items: list[dict] = []
@@ -199,6 +200,16 @@ class DashboardController(QObject):
         )
         if self._force_prayer_alert:
             should_alert = prayer.next_salah != "N/A"
+
+        current_is_isha = prayer.current_salah.strip().lower() == "isha"
+        if current_is_isha:
+            # Isha reminder starts 30 minutes after Isha adhan.
+            if self.prayer.isha_reminder_reached(now, offset_minutes=30):
+                self._isha_nightly_alert_marker = self._prayer_alert_marker
+            if self._isha_nightly_alert_marker == self._prayer_alert_marker:
+                should_alert = True
+        else:
+            self._isha_nightly_alert_marker = ""
         should_auto_stop = (
             prayer.next_salah != "N/A"
             and not self._force_prayer_alert
@@ -322,7 +333,6 @@ class DashboardController(QObject):
         salah_name = self.prayer.due_salah_for_adhan(now)
         if salah_name is None:
             return
-        self._mark_prayer_missed_if_unacknowledged(self._prayer_alert_marker)
         marker = f"{now.date().isoformat()}:{salah_name}"
         if marker == self._last_adhan_marker:
             return

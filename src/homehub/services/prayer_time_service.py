@@ -151,6 +151,34 @@ class PrayerTimeService:
                 return key
         return None
 
+    def isha_reminder_reached(
+        self, now: datetime | None = None, *, offset_minutes: int = 30
+    ) -> bool:
+        current_time = now or datetime.now()
+        if self._client is None:
+            return False
+
+        self._ensure_schedules(current_time)
+        if self._schedule_today is None:
+            return False
+
+        timings = self._schedule_today.timings
+        tz_now = current_time
+        first_timing = next(iter(timings.values()), None)
+        if first_timing is not None and first_timing.tzinfo is not None and tz_now.tzinfo is None:
+            tz_now = current_time.replace(tzinfo=first_timing.tzinfo)
+
+        current_window = self._current_window(tz_now)
+        if current_window is None:
+            return False
+
+        current_name, current_start, _ = current_window
+        if current_name != "Isha":
+            return False
+
+        trigger_moment = current_start + timedelta(minutes=max(0, offset_minutes))
+        return tz_now >= trigger_moment
+
     def _ensure_schedules(self, current_time: datetime) -> None:
         today = current_time.date()
         if (
