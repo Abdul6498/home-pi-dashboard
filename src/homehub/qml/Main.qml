@@ -213,23 +213,31 @@ Window {
                         spacing: 6
                         anchors.horizontalCenter: parent.horizontalCenter
                         Text {
-                            text: root.dashboardModel
-                                  ? (root.dashboardModel.timeText + ":" + root.dashboardModel.secondsText)
-                                  : "--:--:--"
+                            text: root.dashboardModel ? root.dashboardModel.timeText : "--:--"
                             color: "#8dff2f"
-                            font.pixelSize: 118
+                            font.pixelSize: 120
                             font.family: "DejaVu Sans"
                             font.bold: true
                         }
 
                         Text {
-                            text: root.dashboardModel ? root.dashboardModel.periodText : "--"
+                            text: root.dashboardModel ? root.dashboardModel.secondsText : "--"
                             color: "#8dff2f"
-                            font.pixelSize: 36
+                            font.pixelSize: 48
                             font.family: "DejaVu Sans"
                             font.bold: true
                             anchors.bottom: parent.bottom
-                            anchors.bottomMargin: 18
+                            anchors.bottomMargin: 22
+                        }
+
+                        Text {
+                            text: root.dashboardModel ? root.dashboardModel.periodText : "--"
+                            color: "#8dff2f"
+                            font.pixelSize: 38
+                            font.family: "DejaVu Sans"
+                            font.bold: true
+                            anchors.bottom: parent.bottom
+                            anchors.bottomMargin: 24
                         }
                     }
 
