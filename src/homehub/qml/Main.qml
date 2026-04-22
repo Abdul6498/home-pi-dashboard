@@ -29,7 +29,7 @@ Window {
 
     Rectangle {
         anchors.fill: parent
-        color: "#66000000"
+        color: "#4a000000"
         z: 0
     }
 
@@ -151,9 +151,9 @@ Window {
                             width: 230
                             height: 78
                             radius: 24
-                            color: "#20ffffff"
+                            color: "#2fffffff"
                             border.width: 1
-                            border.color: "#4a6b58"
+                            border.color: "#8ed2a8"
 
                             Item {
                                 anchors.fill: parent
@@ -163,7 +163,7 @@ Window {
                                 Text {
                                     id: symbolText
                                     text: modelData.symbol
-                                    color: "#effaf2"
+                                    color: "#ffffff"
                                     font.pixelSize: 18
                                     font.bold: true
                                     anchors.left: parent.left
@@ -212,34 +212,24 @@ Window {
                     Row {
                         spacing: 6
                         anchors.horizontalCenter: parent.horizontalCenter
-                        SevenSegmentText {
-                            value: root.dashboardModel ? root.dashboardModel.timeText : "--:--"
-                            activeColor: "#ff3b3b"
-                            inactiveColor: "transparent"
-                            glyphWidth: 66
-                            glyphHeight: 110
-                            glyphSpacing: 6
-                        }
-
-                        SevenSegmentText {
-                            value: ":" + (root.dashboardModel ? root.dashboardModel.secondsText : "--")
-                            activeColor: "#ff3b3b"
-                            inactiveColor: "transparent"
-                            glyphWidth: 18
-                            glyphHeight: 38
-                            glyphSpacing: 4
-                            anchors.bottom: parent.bottom
-                            anchors.bottomMargin: 11
+                        Text {
+                            text: root.dashboardModel
+                                  ? (root.dashboardModel.timeText + ":" + root.dashboardModel.secondsText)
+                                  : "--:--:--"
+                            color: "#8dff2f"
+                            font.pixelSize: 118
+                            font.family: "DejaVu Sans"
+                            font.bold: true
                         }
 
                         Text {
                             text: root.dashboardModel ? root.dashboardModel.periodText : "--"
-                            color: "#ff3b3b"
-                            font.pixelSize: 26
-                            font.family: "DejaVu Sans Mono"
+                            color: "#8dff2f"
+                            font.pixelSize: 36
+                            font.family: "DejaVu Sans"
                             font.bold: true
                             anchors.bottom: parent.bottom
-                            anchors.bottomMargin: 13
+                            anchors.bottomMargin: 18
                         }
                     }
 
@@ -247,7 +237,7 @@ Window {
                         text: root.dashboardModel
                               ? (root.dashboardModel.weekdayText + "  " + root.dashboardModel.dateText + "  " + root.dashboardModel.yearText)
                               : "--- --- ----"
-                        color: "#d8ebf8"
+                        color: "#f0f7ff"
                         font.pixelSize: 23
                         font.bold: true
                         anchors.horizontalCenter: parent.horizontalCenter
@@ -268,7 +258,7 @@ Window {
                             text: root.dashboardModel
                                   ? (root.dashboardModel.weatherSummary.toUpperCase() + "  " + root.dashboardModel.temperatureText + "  " + root.dashboardModel.humidityText)
                                   : "--"
-                            color: "#dff1ff"
+                            color: "#ffffff"
                             font.pixelSize: 20
                             font.bold: true
                         }
@@ -280,21 +270,21 @@ Window {
 
                         Text {
                             text: root.dashboardModel ? root.dashboardModel.currentSalahText : "--"
-                            color: "#8ee7ff"
+                            color: "#6ee6ff"
                             font.pixelSize: 30
                             font.bold: true
                             anchors.horizontalCenter: parent.horizontalCenter
                         }
                         Text {
                             text: root.dashboardModel ? root.dashboardModel.nextSalahText : "--"
-                            color: "#ffd995"
+                            color: "#ffe28f"
                             font.pixelSize: 31
                             font.bold: true
                             anchors.horizontalCenter: parent.horizontalCenter
                         }
                         Text {
                             text: root.dashboardModel ? root.dashboardModel.timeLeftText : "--H --M LEFT"
-                            color: "#aaff7a"
+                            color: "#b8ff69"
                             font.pixelSize: 22
                             font.bold: true
                             anchors.horizontalCenter: parent.horizontalCenter
@@ -319,9 +309,9 @@ Window {
                             width: 230
                             height: 72
                             radius: 24
-                            color: "#20ffffff"
+                            color: "#2fffffff"
                             border.width: 1
-                            border.color: "#6c6a45"
+                            border.color: "#e7d7a0"
 
                             Item {
                                 anchors.fill: parent
@@ -331,7 +321,7 @@ Window {
                                 Text {
                                     id: stockSymbolText
                                     text: modelData.symbol
-                                    color: "#fff4dc"
+                                    color: "#fffbe9"
                                     font.pixelSize: 15
                                     font.bold: true
                                     anchors.left: parent.left
@@ -382,9 +372,9 @@ Window {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     radius: 24
-                    color: "#20ffffff"
+                    color: "#2fffffff"
                     border.width: 1
-                    border.color: "#48604c"
+                    border.color: "#9bc7b0"
 
                     Column {
                         anchors.horizontalCenter: parent.horizontalCenter
@@ -393,7 +383,7 @@ Window {
 
                         Text {
                             text: modelData.day
-                            color: "#e6f2ff"
+                            color: "#ffffff"
                             font.pixelSize: 20
                             font.bold: true
                             horizontalAlignment: Text.AlignHCenter
@@ -408,14 +398,14 @@ Window {
                         }
                         Text {
                             text: modelData.high
-                            color: "#b8704f"
+                            color: "#ffb35c"
                             font.pixelSize: 16
                             font.bold: true
                             horizontalAlignment: Text.AlignHCenter
                         }
                         Text {
                             text: modelData.low
-                            color: "#4d8fae"
+                            color: "#73dcff"
                             font.pixelSize: 16
                             font.bold: true
                             horizontalAlignment: Text.AlignHCenter

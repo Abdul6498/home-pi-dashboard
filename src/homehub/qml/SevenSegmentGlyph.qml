@@ -3,9 +3,10 @@ import QtQuick
 Item {
     id: root
     property string character: "0"
-    property color activeColor: "#f4f7fb"
-    property color inactiveColor: "#16303b"
+    property color activeColor: "#ff5a00"
+    property color inactiveColor: "transparent"
     property real segmentThickness: Math.max(3, width * 0.16)
+    property real segmentRadius: Math.max(1, segmentThickness * 0.16)
     property real horizontalLength: Math.max(4, width - segmentThickness * 1.8)
     property real verticalLength: Math.max(4, (height - segmentThickness * 3.1) / 2)
 
@@ -36,7 +37,7 @@ Item {
         y: 0
         width: root.horizontalLength
         height: root.segmentThickness
-        radius: root.segmentThickness / 2
+        radius: root.segmentRadius
         color: root.segmentOn("a") ? root.activeColor : root.inactiveColor
     }
 
@@ -46,7 +47,7 @@ Item {
         y: root.segmentThickness * 0.75
         width: root.segmentThickness
         height: root.verticalLength
-        radius: root.segmentThickness / 2
+        radius: root.segmentRadius
         color: root.segmentOn("b") ? root.activeColor : root.inactiveColor
     }
 
@@ -56,7 +57,7 @@ Item {
         y: root.segmentThickness * 1.65 + root.verticalLength
         width: root.segmentThickness
         height: root.verticalLength
-        radius: root.segmentThickness / 2
+        radius: root.segmentRadius
         color: root.segmentOn("c") ? root.activeColor : root.inactiveColor
     }
 
@@ -66,7 +67,7 @@ Item {
         y: root.height - root.segmentThickness
         width: root.horizontalLength
         height: root.segmentThickness
-        radius: root.segmentThickness / 2
+        radius: root.segmentRadius
         color: root.segmentOn("d") ? root.activeColor : root.inactiveColor
     }
 
@@ -76,7 +77,7 @@ Item {
         y: root.segmentThickness * 1.65 + root.verticalLength
         width: root.segmentThickness
         height: root.verticalLength
-        radius: root.segmentThickness / 2
+        radius: root.segmentRadius
         color: root.segmentOn("e") ? root.activeColor : root.inactiveColor
     }
 
@@ -86,7 +87,7 @@ Item {
         y: root.segmentThickness * 0.75
         width: root.segmentThickness
         height: root.verticalLength
-        radius: root.segmentThickness / 2
+        radius: root.segmentRadius
         color: root.segmentOn("f") ? root.activeColor : root.inactiveColor
     }
 
@@ -96,7 +97,7 @@ Item {
         y: (root.height - root.segmentThickness) / 2
         width: root.horizontalLength
         height: root.segmentThickness
-        radius: root.segmentThickness / 2
+        radius: root.segmentRadius
         color: root.segmentOn("g") ? root.activeColor : root.inactiveColor
     }
 
