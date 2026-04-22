@@ -12,6 +12,7 @@ class PrayerStatus:
     current_salah: str
     next_salah: str
     next_time_text: str
+    next_time_moment: datetime | None
     time_left_text: str
     time_left_minutes: int
 
@@ -49,6 +50,7 @@ class PrayerTimeService:
                 current_salah="Salah unknown",
                 next_salah="N/A",
                 next_time_text="--:--",
+                next_time_moment=None,
                 time_left_text="--h --m",
                 time_left_minutes=-1,
             )
@@ -59,6 +61,7 @@ class PrayerTimeService:
                 current_salah="Salah unavailable",
                 next_salah="N/A",
                 next_time_text="--:--",
+                next_time_moment=None,
                 time_left_text="--h --m",
                 time_left_minutes=-1,
             )
@@ -75,10 +78,18 @@ class PrayerTimeService:
         if current_window is not None:
             current_name, current_start, current_end = current_window
             delta = max(current_end - tz_now, timedelta(seconds=0))
+            next_name, next_moment = self._next_after_current_window(
+                current_name=current_name,
+                reference=tz_now,
+            )
+            if next_name is None or next_moment is None:
+                next_name = current_name
+                next_moment = current_start
             return PrayerStatus(
                 current_salah=current_name,
-                next_salah=current_name,
-                next_time_text=current_start.strftime("%I:%M %p"),
+                next_salah=next_name,
+                next_time_text=next_moment.strftime("%I:%M %p"),
+                next_time_moment=next_moment,
                 time_left_text=self._format_duration(delta),
                 time_left_minutes=self._duration_minutes(delta),
             )
@@ -90,6 +101,7 @@ class PrayerTimeService:
                 current_salah=current_salah,
                 next_salah="N/A",
                 next_time_text="--:--",
+                next_time_moment=None,
                 time_left_text="--h --m",
                 time_left_minutes=-1,
             )
@@ -108,6 +120,7 @@ class PrayerTimeService:
             current_salah=current_salah,
             next_salah=next_name,
             next_time_text=next_moment.strftime("%I:%M %p"),
+            next_time_moment=next_moment,
             time_left_text=self._format_duration(delta),
             time_left_minutes=self._duration_minutes(delta),
         )
@@ -216,6 +229,31 @@ class PrayerTimeService:
             if start <= now < end:
                 return (name, start, end)
         return None
+
+    def _next_after_current_window(
+        self, *, current_name: str, reference: datetime
+    ) -> tuple[str | None, datetime | None]:
+        today = self._schedule_today.timings if self._schedule_today else {}
+        tomorrow = self._schedule_tomorrow.timings if self._schedule_tomorrow else {}
+
+        if current_name == "Fajr":
+            moment = today.get("Dhuhr")
+            return ("Dhuhr", moment) if moment is not None else self._next_salah(reference)
+        if current_name == "Dhuhr":
+            moment = today.get("Asr")
+            return ("Asr", moment) if moment is not None else self._next_salah(reference)
+        if current_name == "Asr":
+            moment = today.get("Maghrib")
+            return ("Maghrib", moment) if moment is not None else self._next_salah(reference)
+        if current_name == "Maghrib":
+            moment = today.get("Isha")
+            return ("Isha", moment) if moment is not None else self._next_salah(reference)
+        if current_name == "Isha":
+            moment = tomorrow.get("Fajr")
+            if moment is None:
+                moment = today.get("Fajr")
+            return ("Fajr", moment) if moment is not None else self._next_salah(reference)
+        return self._next_salah(reference)
 
     def _adhan_trigger_moment(self, salah_name: str) -> datetime | None:
         today = self._schedule_today.timings if self._schedule_today else {}

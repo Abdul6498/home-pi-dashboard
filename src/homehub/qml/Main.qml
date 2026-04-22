@@ -329,6 +329,52 @@ Window {
                             }
                         }
                     }
+
+                    Rectangle {
+                        width: 92
+                        height: 38
+                        radius: 19
+                        color: "#24000000"
+                        border.width: 1
+                        border.color: "#ffd34d"
+                        visible: root.dashboardModel ? root.dashboardModel.missedPrayerNotificationVisible : false
+                        anchors.horizontalCenter: parent.horizontalCenter
+
+                        Row {
+                            anchors.centerIn: parent
+                            spacing: 8
+
+                            Text {
+                                text: "🔔"
+                                color: "#ffd34d"
+                                font.pixelSize: 20
+                            }
+
+                            Rectangle {
+                                width: 24
+                                height: 24
+                                radius: 12
+                                color: "#ff4a4a"
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: root.dashboardModel ? root.dashboardModel.missedPrayerCount : 0
+                                    color: "white"
+                                    font.pixelSize: 14
+                                    font.bold: true
+                                }
+                            }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                if (root.dashboardModel) {
+                                    root.dashboardModel.clearMissedPrayerNotifications()
+                                }
+                            }
+                        }
+                    }
                 }
             }
 

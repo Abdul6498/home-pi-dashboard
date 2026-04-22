@@ -117,8 +117,8 @@ def test_get_status_over_midnight_formats_next_prayer_in_12_hour_time() -> None:
     status = service.get_status(datetime(2026, 4, 20, 22, 15))
 
     assert status.current_salah == "Isha"
-    assert status.next_salah == "Isha"
-    assert status.next_time_text == "10:02 PM"
+    assert status.next_salah == "Fajr"
+    assert status.next_time_text == "04:44 AM"
     assert status.time_left_text == "06h 29m"
 
 
@@ -156,8 +156,8 @@ def test_get_status_normalizes_same_day_fajr_to_tomorrow_when_after_isha() -> No
     status = service.get_status(datetime(2026, 4, 20, 22, 22))
 
     assert status.current_salah == "Isha"
-    assert status.next_salah == "Isha"
-    assert status.next_time_text == "10:02 PM"
+    assert status.next_salah == "Fajr"
+    assert status.next_time_text == "04:44 AM"
     assert status.time_left_text == "06h 22m"
 
 
@@ -195,8 +195,8 @@ def test_get_status_keeps_positive_overnight_countdown_for_isha_to_fajr() -> Non
     status = service.get_status(datetime(2026, 4, 20, 22, 22))
 
     assert status.current_salah == "Isha"
-    assert status.next_salah == "Isha"
-    assert status.next_time_text == "10:02 PM"
+    assert status.next_salah == "Fajr"
+    assert status.next_time_text == "04:44 AM"
     assert status.time_left_text == "06h 22m"
 
 
@@ -278,8 +278,8 @@ def test_get_status_uses_fajr_window_until_sunrise() -> None:
     status = service.get_status(datetime(2026, 4, 22, 5, 0))
 
     assert status.current_salah == "Fajr"
-    assert status.next_salah == "Fajr"
-    assert status.next_time_text == "04:39 AM"
+    assert status.next_salah == "Dhuhr"
+    assert status.next_time_text == "01:22 PM"
     assert status.time_left_text == "01h 19m"
 
 
@@ -356,8 +356,8 @@ def test_get_status_uses_isha_window_until_next_imsak() -> None:
     status = service.get_status(datetime(2026, 4, 22, 23, 0))
 
     assert status.current_salah == "Isha"
-    assert status.next_salah == "Isha"
-    assert status.next_time_text == "10:06 PM"
+    assert status.next_salah == "Fajr"
+    assert status.next_time_text == "04:38 AM"
     assert status.time_left_text == "05h 28m"
 
 
@@ -395,6 +395,45 @@ def test_get_status_keeps_isha_until_imsak_after_midnight() -> None:
     status = service.get_status(datetime(2026, 4, 23, 1, 0))
 
     assert status.current_salah == "Isha"
+    assert status.next_salah == "Fajr"
+    assert status.next_time_text == "04:37 AM"
+    assert status.time_left_text == "03h 28m"
+
+
+def test_get_status_uses_maghrib_window_with_next_isha() -> None:
+    service = PrayerTimeService(city="Hessigheim", country="Germany")
+
+    class _Yesterday:
+        timings = {
+            "Isha": datetime(2026, 4, 21, 22, 6),
+        }
+
+    class _Today:
+        timings = {
+            "Imsak": datetime(2026, 4, 22, 4, 29),
+            "Fajr": datetime(2026, 4, 22, 4, 39),
+            "Sunrise": datetime(2026, 4, 22, 6, 19),
+            "Dhuhr": datetime(2026, 4, 22, 13, 22),
+            "Asr": datetime(2026, 4, 22, 18, 16),
+            "Maghrib": datetime(2026, 4, 22, 20, 26),
+            "Isha": datetime(2026, 4, 22, 22, 6),
+        }
+
+    class _Tomorrow:
+        timings = {
+            "Imsak": datetime(2026, 4, 23, 4, 28),
+            "Fajr": datetime(2026, 4, 23, 4, 38),
+        }
+
+    service._schedule_yesterday = _Yesterday()  # noqa: SLF001
+    service._schedule_today = _Today()  # noqa: SLF001
+    service._schedule_tomorrow = _Tomorrow()  # noqa: SLF001
+    service._loaded_for_date = datetime(2026, 4, 22).date()  # noqa: SLF001
+    service._last_refresh_at = datetime(2026, 4, 22, 20, 33)  # noqa: SLF001
+
+    status = service.get_status(datetime(2026, 4, 22, 20, 33))
+
+    assert status.current_salah == "Maghrib"
     assert status.next_salah == "Isha"
     assert status.next_time_text == "10:06 PM"
-    assert status.time_left_text == "03h 28m"
+    assert status.time_left_text == "01h 33m"
