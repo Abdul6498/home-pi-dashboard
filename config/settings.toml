@@ -27,4 +27,4 @@ markets = true
 clock_seconds = 1
 weather_seconds = 900
 gps_seconds = 90
-market_seconds = 5
+market_seconds = 300

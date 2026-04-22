@@ -246,7 +246,7 @@ Window {
                               ? (root.dashboardModel.weekdayText + "  " + root.dashboardModel.dateText + "  " + root.dashboardModel.yearText)
                               : "--- --- ----"
                         color: "#f0f7ff"
-                        font.pixelSize: 23
+                        font.pixelSize: 31
                         font.bold: true
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
@@ -267,7 +267,7 @@ Window {
                                   ? (root.dashboardModel.weatherSummary.toUpperCase() + "  " + root.dashboardModel.temperatureText + "  " + root.dashboardModel.humidityText)
                                   : "--"
                             color: "#ffffff"
-                            font.pixelSize: 20
+                            font.pixelSize: 28
                             font.bold: true
                         }
                     }
@@ -279,21 +279,21 @@ Window {
                         Text {
                             text: root.dashboardModel ? root.dashboardModel.currentSalahText : "--"
                             color: "#6ee6ff"
-                            font.pixelSize: 30
+                            font.pixelSize: 38
                             font.bold: true
                             anchors.horizontalCenter: parent.horizontalCenter
                         }
                         Text {
                             text: root.dashboardModel ? root.dashboardModel.nextSalahText : "--"
                             color: "#ffe28f"
-                            font.pixelSize: 31
+                            font.pixelSize: 39
                             font.bold: true
                             anchors.horizontalCenter: parent.horizontalCenter
                         }
                         Text {
                             text: root.dashboardModel ? root.dashboardModel.timeLeftText : "--H --M LEFT"
                             color: "#b8ff69"
-                            font.pixelSize: 22
+                            font.pixelSize: 30
                             font.bold: true
                             anchors.horizontalCenter: parent.horizontalCenter
                         }
