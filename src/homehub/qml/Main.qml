@@ -214,16 +214,16 @@ Window {
                         anchors.horizontalCenter: parent.horizontalCenter
                         SevenSegmentText {
                             value: root.dashboardModel ? root.dashboardModel.timeText : "--:--"
-                            activeColor: "#9cff57"
+                            activeColor: "#ff3b3b"
                             inactiveColor: "transparent"
-                            glyphWidth: 52
-                            glyphHeight: 96
+                            glyphWidth: 66
+                            glyphHeight: 110
                             glyphSpacing: 6
                         }
 
                         SevenSegmentText {
                             value: ":" + (root.dashboardModel ? root.dashboardModel.secondsText : "--")
-                            activeColor: "#9cff57"
+                            activeColor: "#ff3b3b"
                             inactiveColor: "transparent"
                             glyphWidth: 18
                             glyphHeight: 38
@@ -234,7 +234,7 @@ Window {
 
                         Text {
                             text: root.dashboardModel ? root.dashboardModel.periodText : "--"
-                            color: "#9cff57"
+                            color: "#ff3b3b"
                             font.pixelSize: 26
                             font.family: "DejaVu Sans Mono"
                             font.bold: true
