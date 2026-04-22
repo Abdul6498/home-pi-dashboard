@@ -392,7 +392,7 @@ Window {
                         Text {
                             text: modelData.day
                             color: "#ffffff"
-                            font.pixelSize: 20
+                            font.pixelSize: 30
                             font.bold: true
                             horizontalAlignment: Text.AlignHCenter
                         }
@@ -407,14 +407,14 @@ Window {
                         Text {
                             text: modelData.high
                             color: "#ffb35c"
-                            font.pixelSize: 16
+                            font.pixelSize: 26
                             font.bold: true
                             horizontalAlignment: Text.AlignHCenter
                         }
                         Text {
                             text: modelData.low
                             color: "#73dcff"
-                            font.pixelSize: 16
+                            font.pixelSize: 26
                             font.bold: true
                             horizontalAlignment: Text.AlignHCenter
                         }
