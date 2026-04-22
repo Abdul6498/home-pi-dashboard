@@ -187,6 +187,7 @@ class DashboardController(QObject):
         next_display = self._display_salah_name(prayer.next_salah)
         self._next_salah_text = f"{next_display} {prayer.next_time_text}".upper()
         self._time_left_text = f"{prayer.time_left_text} LEFT".upper()
+        was_alert_active = self._prayer_alert_active
         marker_moment = prayer.next_time_moment.isoformat() if prayer.next_time_moment else prayer.next_time_text
         marker = f"{prayer.next_salah}|{marker_moment}"
         if marker != self._prayer_alert_marker:
@@ -217,6 +218,8 @@ class DashboardController(QObject):
             self._prayer_alert_active = False
         elif current_is_isha:
             self._prayer_alert_active = should_alert
+            if was_alert_active and not self._prayer_alert_active:
+                self._mark_prayer_missed_if_unacknowledged(self._prayer_alert_marker)
         else:
             self._prayer_alert_active = (
                 should_alert and self._dismissed_prayer_alert_marker != self._prayer_alert_marker
