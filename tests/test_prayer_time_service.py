@@ -437,3 +437,108 @@ def test_get_status_uses_maghrib_window_with_next_isha() -> None:
     assert status.next_salah == "Isha"
     assert status.next_time_text == "10:06 PM"
     assert status.time_left_text == "01h 33m"
+
+def test_get_status_keeps_isha_overnight_when_imsak_is_missing() -> None:
+    service = PrayerTimeService(city="Hessigheim", country="Germany")
+
+    class _Yesterday:
+        timings = {
+            "Isha": datetime(2026, 4, 21, 22, 6),
+        }
+
+    class _TodayMissingImsak:
+        timings = {
+            "Fajr": datetime(2026, 4, 22, 4, 39),
+            "Sunrise": datetime(2026, 4, 22, 6, 19),
+            "Dhuhr": datetime(2026, 4, 22, 13, 22),
+            "Asr": datetime(2026, 4, 22, 18, 16),
+            "Maghrib": datetime(2026, 4, 22, 20, 26),
+            "Isha": datetime(2026, 4, 22, 22, 6),
+        }
+
+    class _TomorrowMissingImsak:
+        timings = {
+            "Fajr": datetime(2026, 4, 23, 4, 38),
+        }
+
+    service._schedule_yesterday = _Yesterday()  # noqa: SLF001
+    service._schedule_today = _TodayMissingImsak()  # noqa: SLF001
+    service._schedule_tomorrow = _TomorrowMissingImsak()  # noqa: SLF001
+    service._loaded_for_date = datetime(2026, 4, 22).date()  # noqa: SLF001
+    service._last_refresh_at = datetime(2026, 4, 22, 23, 30)  # noqa: SLF001
+
+    status = service.get_status(datetime(2026, 4, 22, 23, 20))
+
+    assert status.current_salah == "Isha"
+    assert status.next_salah == "Fajr"
+
+def test_fallback_shows_isha_until_next_fajr_imsak_when_isha_time_missing() -> None:
+    service = PrayerTimeService(city="Hessigheim", country="Germany")
+
+    class _Yesterday:
+        timings = {
+            "Isha": datetime(2026, 4, 21, 22, 6),
+        }
+
+    class _TodayMissingIsha:
+        timings = {
+            "Imsak": datetime(2026, 4, 22, 4, 29),
+            "Fajr": datetime(2026, 4, 22, 4, 39),
+            "Sunrise": datetime(2026, 4, 22, 6, 19),
+            "Dhuhr": datetime(2026, 4, 22, 13, 22),
+            "Asr": datetime(2026, 4, 22, 18, 16),
+            "Maghrib": datetime(2026, 4, 22, 20, 26),
+        }
+
+    class _Tomorrow:
+        timings = {
+            "Imsak": datetime(2026, 4, 23, 4, 28),
+            "Fajr": datetime(2026, 4, 23, 4, 38),
+        }
+
+    service._schedule_yesterday = _Yesterday()  # noqa: SLF001
+    service._schedule_today = _TodayMissingIsha()  # noqa: SLF001
+    service._schedule_tomorrow = _Tomorrow()  # noqa: SLF001
+    service._loaded_for_date = datetime(2026, 4, 22).date()  # noqa: SLF001
+    service._last_refresh_at = datetime(2026, 4, 22, 22, 30)  # noqa: SLF001
+
+    status = service.get_status(datetime(2026, 4, 22, 22, 30))
+
+    assert status.current_salah == "Isha"
+    assert status.next_salah == "Fajr"
+
+
+def test_fallback_switches_to_before_fajr_after_imsak_before_fajr() -> None:
+    service = PrayerTimeService(city="Hessigheim", country="Germany")
+
+    class _Yesterday:
+        timings = {
+            "Isha": datetime(2026, 4, 21, 22, 6),
+        }
+
+    class _TodayMissingIsha:
+        timings = {
+            "Imsak": datetime(2026, 4, 22, 4, 29),
+            "Fajr": datetime(2026, 4, 22, 4, 39),
+            "Sunrise": datetime(2026, 4, 22, 6, 19),
+            "Dhuhr": datetime(2026, 4, 22, 13, 22),
+            "Asr": datetime(2026, 4, 22, 18, 16),
+            "Maghrib": datetime(2026, 4, 22, 20, 26),
+        }
+
+    class _Tomorrow:
+        timings = {
+            "Imsak": datetime(2026, 4, 23, 4, 28),
+            "Fajr": datetime(2026, 4, 23, 4, 38),
+        }
+
+    service._schedule_yesterday = _Yesterday()  # noqa: SLF001
+    service._schedule_today = _TodayMissingIsha()  # noqa: SLF001
+    service._schedule_tomorrow = _Tomorrow()  # noqa: SLF001
+    service._loaded_for_date = datetime(2026, 4, 22).date()  # noqa: SLF001
+    service._last_refresh_at = datetime(2026, 4, 22, 4, 31)  # noqa: SLF001
+
+    status = service.get_status(datetime(2026, 4, 22, 4, 31))
+
+    assert status.current_salah == "Before Fajr"
+    assert status.next_salah == "Fajr"

@@ -90,6 +90,8 @@ class DashboardController(QObject):
         self._auto_closed_prayer_alert_marker = ""
         self._missed_prayer_count = 0
         self._isha_nightly_alert_marker = ""
+        self._isha_reminder_sound_until: datetime | None = None
+        self._isha_reminder_sound_marker = ""
 
         self._forecast_items: list[dict] = []
         self._market_items: list[dict] = []
@@ -194,6 +196,8 @@ class DashboardController(QObject):
             self._mark_prayer_missed_if_unacknowledged(self._prayer_alert_marker)
             self._prayer_alert_marker = marker
             self._prayer_alert_active = False
+            self._isha_reminder_sound_until = None
+            self._isha_reminder_sound_marker = ""
         should_alert = (
             prayer.next_salah != "N/A"
             and 0 <= prayer.time_left_minutes <= self._prayer_alert_threshold_minutes
@@ -224,8 +228,24 @@ class DashboardController(QObject):
                 and self._auto_closed_prayer_alert_marker != self._prayer_alert_marker
             )
         if self._prayer_alert_active:
-            self.adhan_audio.start_prayer_reminder()
+            if current_is_isha:
+                if self._isha_reminder_sound_marker != self._prayer_alert_marker:
+                    self._isha_reminder_sound_marker = self._prayer_alert_marker
+                    self._isha_reminder_sound_until = now + timedelta(minutes=5)
+                if (
+                    self._isha_reminder_sound_until is not None
+                    and now < self._isha_reminder_sound_until
+                ):
+                    self.adhan_audio.start_prayer_reminder()
+                else:
+                    self.adhan_audio.stop_prayer_reminder()
+            else:
+                self._isha_reminder_sound_until = None
+                self._isha_reminder_sound_marker = ""
+                self.adhan_audio.start_prayer_reminder()
         else:
+            self._isha_reminder_sound_until = None
+            self._isha_reminder_sound_marker = ""
             self.adhan_audio.stop_prayer_reminder()
         self._play_test_adhan_if_due(now)
         self._play_adhan_if_due(now)

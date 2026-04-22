@@ -239,11 +239,24 @@ class PrayerTimeService:
         yesterday = self._schedule_yesterday.timings if self._schedule_yesterday else {}
         today = self._schedule_today.timings if self._schedule_today else {}
         tomorrow = self._schedule_tomorrow.timings if self._schedule_tomorrow else {}
+
+        # Some data sources may omit Imsak. In that case, keep the expected
+        # overnight behavior by falling back to Fajr as the boundary.
+        today_imsak = (
+            today.get("Imsak")
+            or self._project_previous_day_time(tomorrow.get("Imsak"))
+            or today.get("Fajr")
+        )
+        next_imsak = (
+            tomorrow.get("Imsak")
+            or self._project_next_day_time(today.get("Imsak"))
+            or tomorrow.get("Fajr")
+            or self._project_next_day_time(today.get("Fajr"))
+        )
         yesterday_isha = yesterday.get("Isha") or self._project_previous_day_time(today.get("Isha"))
-        next_imsak = tomorrow.get("Imsak") or self._project_next_day_time(today.get("Imsak"))
 
         windows: list[tuple[str, datetime | None, datetime | None]] = [
-            ("Isha", yesterday_isha, today.get("Imsak")),
+            ("Isha", yesterday_isha, today_imsak),
             ("Fajr", today.get("Fajr"), today.get("Sunrise")),
             ("Dhuhr", today.get("Dhuhr"), today.get("Asr")),
             ("Asr", today.get("Asr"), today.get("Maghrib")),
@@ -354,9 +367,26 @@ class PrayerTimeService:
         if current_window is not None:
             return current_window[0]
 
-        next_name, _ = self._next_salah(now)
+        next_name, next_moment = self._next_salah(now)
         if next_name is None:
             return "Salah unavailable"
+
+        today = self._schedule_today.timings if self._schedule_today else {}
+        tomorrow = self._schedule_tomorrow.timings if self._schedule_tomorrow else {}
+
+        # Overnight fallback: show Isha only until the Imsak associated with
+        # the upcoming Fajr (today or tomorrow). After that, show Before Fajr.
+        if next_name == "Fajr":
+            if next_moment is not None and next_moment.date() == now.date():
+                imsak_boundary = today.get("Imsak")
+            else:
+                imsak_boundary = (
+                    tomorrow.get("Imsak")
+                    or self._project_next_day_time(today.get("Imsak"))
+                )
+            if imsak_boundary is None or now < imsak_boundary:
+                return "Isha"
+            return "Before Fajr"
         return f"Before {next_name}"
 
     def _refresh_overdue(self, current_time: datetime) -> bool:
