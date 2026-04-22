@@ -344,10 +344,41 @@ Window {
                             anchors.centerIn: parent
                             spacing: 8
 
-                            Text {
-                                text: "🔔"
-                                color: "#ffd34d"
-                                font.pixelSize: 20
+                            Canvas {
+                                id: bellIcon
+                                width: 22
+                                height: 22
+                                onPaint: {
+                                    const ctx = getContext("2d")
+                                    ctx.reset()
+
+                                    // Bell body
+                                    ctx.fillStyle = "#f5bd1f"
+                                    ctx.beginPath()
+                                    ctx.moveTo(4, 14)
+                                    ctx.lineTo(18, 14)
+                                    ctx.quadraticCurveTo(20, 14, 20, 16)
+                                    ctx.quadraticCurveTo(20, 18, 18, 18)
+                                    ctx.lineTo(4, 18)
+                                    ctx.quadraticCurveTo(2, 18, 2, 16)
+                                    ctx.quadraticCurveTo(2, 14, 4, 14)
+                                    ctx.closePath()
+                                    ctx.fill()
+
+                                    // Dome
+                                    ctx.beginPath()
+                                    ctx.arc(11, 11, 7, Math.PI, 0, false)
+                                    ctx.fill()
+
+                                    // Bell top
+                                    ctx.fillRect(10, 3, 2, 2)
+
+                                    // Clapper
+                                    ctx.fillStyle = "#f08a00"
+                                    ctx.beginPath()
+                                    ctx.arc(11, 18, 2, 0, Math.PI * 2, false)
+                                    ctx.fill()
+                                }
                             }
 
                             Rectangle {
