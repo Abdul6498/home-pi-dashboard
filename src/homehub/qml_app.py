@@ -24,7 +24,7 @@ from homehub.ui.backgrounds import (
 from homehub.ui.seasonal import season_for_now
 
 try:
-    from PySide6.QtCore import QObject, Property, QTimer, Signal, Qt
+    from PySide6.QtCore import QObject, Property, QTimer, Signal, Qt, Slot
     from PySide6.QtGui import QGuiApplication
     from PySide6.QtQml import QQmlApplicationEngine
 except ModuleNotFoundError as exc:  # pragma: no cover
@@ -78,6 +78,9 @@ class DashboardController(QObject):
         self._next_salah_text = "--"
         self._time_left_text = "--H --M"
         self._current_salah_text = "--"
+        self._prayer_alert_active = False
+        self._prayer_alert_marker = ""
+        self._dismissed_prayer_alert_marker = ""
 
         self._forecast_items: list[dict] = []
         self._market_items: list[dict] = []
@@ -175,6 +178,14 @@ class DashboardController(QObject):
         self._current_salah_text = prayer.current_salah.upper()
         self._next_salah_text = f"{prayer.next_salah} {prayer.next_time_text}".upper()
         self._time_left_text = f"{prayer.time_left_text} LEFT".upper()
+        marker = f"{prayer.next_salah}|{prayer.next_time_text}"
+        if marker != self._prayer_alert_marker:
+            self._prayer_alert_marker = marker
+            self._prayer_alert_active = False
+        should_alert = prayer.next_salah != "N/A" and 0 <= prayer.time_left_minutes <= 15
+        self._prayer_alert_active = (
+            should_alert and self._dismissed_prayer_alert_marker != self._prayer_alert_marker
+        )
         self._play_test_adhan_if_due(now)
         self._play_adhan_if_due(now)
         self._update_post_adhan_image_state(now)
@@ -346,6 +357,16 @@ class DashboardController(QObject):
     @Property(str, notify=dataChanged)
     def currentSalahText(self) -> str:
         return self._current_salah_text
+
+    @Property(bool, notify=dataChanged)
+    def prayerAlertActive(self) -> bool:
+        return self._prayer_alert_active
+
+    @Slot()
+    def acknowledgePrayerAlert(self) -> None:
+        self._dismissed_prayer_alert_marker = self._prayer_alert_marker
+        self._prayer_alert_active = False
+        self.dataChanged.emit()
 
     @Property("QVariantList", notify=dataChanged)
     def forecastItems(self) -> list[dict]:

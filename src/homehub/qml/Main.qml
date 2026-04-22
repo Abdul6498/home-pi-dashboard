@@ -207,7 +207,7 @@ Window {
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.top: parent.top
                     anchors.topMargin: 4
-                    spacing: 14
+                    spacing: 10
 
                     Row {
                         spacing: 6
@@ -215,7 +215,7 @@ Window {
                         Text {
                             text: root.dashboardModel ? root.dashboardModel.timeText : "--:--"
                             color: "#8dff2f"
-                            font.pixelSize: 120
+                            font.pixelSize: 96
                             font.family: "DejaVu Sans"
                             font.bold: true
                         }
@@ -223,21 +223,21 @@ Window {
                         Text {
                             text: root.dashboardModel ? root.dashboardModel.secondsText : "--"
                             color: "#8dff2f"
-                            font.pixelSize: 48
+                            font.pixelSize: 34
                             font.family: "DejaVu Sans"
                             font.bold: true
                             anchors.bottom: parent.bottom
-                            anchors.bottomMargin: 22
+                            anchors.bottomMargin: 18
                         }
 
                         Text {
                             text: root.dashboardModel ? root.dashboardModel.periodText : "--"
                             color: "#8dff2f"
-                            font.pixelSize: 38
+                            font.pixelSize: 28
                             font.family: "DejaVu Sans"
                             font.bold: true
                             anchors.bottom: parent.bottom
-                            anchors.bottomMargin: 24
+                            anchors.bottomMargin: 20
                         }
                     }
 
@@ -246,7 +246,7 @@ Window {
                               ? (root.dashboardModel.weekdayText + "  " + root.dashboardModel.dateText + "  " + root.dashboardModel.yearText)
                               : "--- --- ----"
                         color: "#f0f7ff"
-                        font.pixelSize: 31
+                        font.pixelSize: 22
                         font.bold: true
                         anchors.horizontalCenter: parent.horizontalCenter
                     }
@@ -267,35 +267,65 @@ Window {
                                   ? (root.dashboardModel.weatherSummary.toUpperCase() + "  " + root.dashboardModel.temperatureText + "  " + root.dashboardModel.humidityText)
                                   : "--"
                             color: "#ffffff"
-                            font.pixelSize: 28
+                            font.pixelSize: 20
                             font.bold: true
                         }
                     }
 
-                    Column {
+                    Item {
+                        id: prayerAlertBox
                         anchors.horizontalCenter: parent.horizontalCenter
-                        spacing: 5
+                        width: prayerBlock.implicitWidth
+                        height: prayerBlock.implicitHeight
 
-                        Text {
-                            text: root.dashboardModel ? root.dashboardModel.currentSalahText : "--"
-                            color: "#6ee6ff"
-                            font.pixelSize: 38
-                            font.bold: true
-                            anchors.horizontalCenter: parent.horizontalCenter
+                        Column {
+                            id: prayerBlock
+                            anchors.centerIn: parent
+                            spacing: 4
+
+                            Text {
+                                text: root.dashboardModel ? root.dashboardModel.currentSalahText : "--"
+                                color: "#6ee6ff"
+                                font.pixelSize: 30
+                                font.bold: true
+                                anchors.horizontalCenter: parent.horizontalCenter
+                            }
+                            Text {
+                                text: root.dashboardModel ? root.dashboardModel.nextSalahText : "--"
+                                color: "#ffe28f"
+                                font.pixelSize: 31
+                                font.bold: true
+                                anchors.horizontalCenter: parent.horizontalCenter
+                            }
+                            Text {
+                                text: root.dashboardModel ? root.dashboardModel.timeLeftText : "--H --M LEFT"
+                                color: "#b8ff69"
+                                font.pixelSize: 22
+                                font.bold: true
+                                anchors.horizontalCenter: parent.horizontalCenter
+                            }
                         }
-                        Text {
-                            text: root.dashboardModel ? root.dashboardModel.nextSalahText : "--"
-                            color: "#ffe28f"
-                            font.pixelSize: 39
-                            font.bold: true
-                            anchors.horizontalCenter: parent.horizontalCenter
+
+                        SequentialAnimation on opacity {
+                            id: prayerBlink
+                            running: root.dashboardModel ? root.dashboardModel.prayerAlertActive : false
+                            loops: Animation.Infinite
+                            NumberAnimation { to: 0.2; duration: 420 }
+                            NumberAnimation { to: 1.0; duration: 420 }
+                            onRunningChanged: {
+                                if (!running) {
+                                    prayerBlock.opacity = 1.0
+                                }
+                            }
                         }
-                        Text {
-                            text: root.dashboardModel ? root.dashboardModel.timeLeftText : "--H --M LEFT"
-                            color: "#b8ff69"
-                            font.pixelSize: 30
-                            font.bold: true
-                            anchors.horizontalCenter: parent.horizontalCenter
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                if (root.dashboardModel) {
+                                    root.dashboardModel.acknowledgePrayerAlert()
+                                }
+                            }
                         }
                     }
                 }

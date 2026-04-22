@@ -13,6 +13,7 @@ class PrayerStatus:
     next_salah: str
     next_time_text: str
     time_left_text: str
+    time_left_minutes: int
 
 
 class PrayerTimeService:
@@ -49,6 +50,7 @@ class PrayerTimeService:
                 next_salah="N/A",
                 next_time_text="--:--",
                 time_left_text="--h --m",
+                time_left_minutes=-1,
             )
 
         self._ensure_schedules(current_time)
@@ -58,6 +60,7 @@ class PrayerTimeService:
                 next_salah="N/A",
                 next_time_text="--:--",
                 time_left_text="--h --m",
+                time_left_minutes=-1,
             )
 
         timings = self._schedule_today.timings
@@ -77,6 +80,7 @@ class PrayerTimeService:
                 next_salah=current_name,
                 next_time_text=current_start.strftime("%I:%M %p"),
                 time_left_text=self._format_duration(delta),
+                time_left_minutes=self._duration_minutes(delta),
             )
 
         next_name, next_moment = self._next_salah(tz_now)
@@ -87,6 +91,7 @@ class PrayerTimeService:
                 next_salah="N/A",
                 next_time_text="--:--",
                 time_left_text="--h --m",
+                time_left_minutes=-1,
             )
 
         next_moment = self._resolve_future_next_moment(
@@ -104,6 +109,7 @@ class PrayerTimeService:
             next_salah=next_name,
             next_time_text=next_moment.strftime("%I:%M %p"),
             time_left_text=self._format_duration(delta),
+            time_left_minutes=self._duration_minutes(delta),
         )
 
     def due_salah_for_adhan(
@@ -304,7 +310,10 @@ class PrayerTimeService:
             return None
 
     def _format_duration(self, delta: timedelta) -> str:
-        minutes_total = int(delta.total_seconds() // 60)
+        minutes_total = self._duration_minutes(delta)
         hours = minutes_total // 60
         minutes = minutes_total % 60
         return f"{hours:02d}h {minutes:02d}m"
+
+    def _duration_minutes(self, delta: timedelta) -> int:
+        return max(0, int(delta.total_seconds() // 60))
