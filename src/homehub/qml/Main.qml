@@ -314,7 +314,7 @@ Window {
                             NumberAnimation { to: 1.0; duration: 420 }
                             onRunningChanged: {
                                 if (!running) {
-                                    prayerBlock.opacity = 1.0
+                                    prayerAlertBox.opacity = 1.0
                                 }
                             }
                         }
@@ -325,6 +325,7 @@ Window {
                                 if (root.dashboardModel) {
                                     root.dashboardModel.acknowledgePrayerAlert()
                                 }
+                                prayerAlertBox.opacity = 1.0
                             }
                         }
                     }
