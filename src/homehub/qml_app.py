@@ -16,7 +16,11 @@ from homehub.services.gps_service import GPSService
 from homehub.services.market_price_service import MarketPriceService
 from homehub.services.prayer_time_service import PrayerTimeService
 from homehub.services.weather_service import WeatherService
-from homehub.ui.backgrounds import bundled_background_path, prepare_background_asset
+from homehub.ui.backgrounds import (
+    bundled_background_path,
+    prepare_background_asset,
+    resolve_background_path,
+)
 from homehub.ui.seasonal import season_for_now
 
 try:
@@ -80,6 +84,7 @@ class DashboardController(QObject):
         self._crypto_items: list[dict] = []
         self._stock_items: list[dict] = []
         self._background_image_url = self._pick_background_url()
+        self._background_day = datetime.now().date()
         self._last_adhan_marker = ""
         self._active_adhan_marker = ""
         self._post_adhan_image_url = self._pick_post_adhan_image_url()
@@ -109,13 +114,18 @@ class DashboardController(QObject):
         self.adhan_audio.stop()
 
     def refresh(self, force: bool = False) -> None:
+        now = datetime.now()
         clock_data = self.clock.update()
         self._time_text = clock_data.time_text
         self._seconds_text = clock_data.seconds_text
         self._period_text = clock_data.period_text
         self._weekday_text = clock_data.weekday_text
         self._date_text = clock_data.date_text
-        self._year_text = datetime.now().strftime("%Y")
+        self._year_text = now.strftime("%Y")
+
+        if self._background_day != now.date():
+            self._background_day = now.date()
+            self._background_image_url = self._pick_background_url()
 
         interval = max(1, self.settings.refresh.clock_seconds)
         self._weather_counter += interval
@@ -161,11 +171,10 @@ class DashboardController(QObject):
             ]
             self._market_counter = 0
 
-        prayer = self.prayer.get_status(datetime.now())
+        prayer = self.prayer.get_status(now)
         self._current_salah_text = prayer.current_salah.upper()
         self._next_salah_text = f"{prayer.next_salah} {prayer.next_time_text}".upper()
         self._time_left_text = f"{prayer.time_left_text} LEFT".upper()
-        now = datetime.now()
         self._play_test_adhan_if_due(now)
         self._play_adhan_if_due(now)
         self._update_post_adhan_image_state(now)
@@ -173,12 +182,18 @@ class DashboardController(QObject):
         self.dataChanged.emit()
 
     def _pick_background_url(self) -> str:
+        if not self.settings.background.enabled:
+            return ""
+
         season = season_for_now()
         cache_dir = self.daily_images.cache_dir() / "optimized"
         source_path: Path | None = None
 
-        if self.settings.performance.use_daily_wallpapers:
+        if self.settings.background.use_daily_image:
             source_path = self.daily_images.get_daily_image_path(season.name)
+
+        if source_path is None:
+            source_path = resolve_background_path(self.settings.background.default_image)
 
         if source_path is None:
             bundled = bundled_background_path(season.background_asset)

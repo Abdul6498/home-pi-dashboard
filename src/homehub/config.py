@@ -30,6 +30,13 @@ class ThemeSettings:
 
 
 @dataclass(frozen=True)
+class BackgroundSettings:
+    enabled: bool
+    use_daily_image: bool
+    default_image: str
+
+
+@dataclass(frozen=True)
 class LocationSettings:
     default_lat: float
     default_lon: float
@@ -65,6 +72,7 @@ class PerformanceSettings:
 class Settings:
     app: AppSettings
     theme: ThemeSettings
+    background: BackgroundSettings
     location: LocationSettings
     modules: ModuleSettings
     refresh: RefreshSettings
@@ -95,6 +103,7 @@ def load_settings(config_path: Path | None = None) -> Settings:
 
     app = _section(data, "app")
     theme = _section(data, "theme")
+    background = _section(data, "background")
     location = _section(data, "location")
     modules = _section(data, "modules")
     refresh = _section(data, "refresh")
@@ -112,6 +121,17 @@ def load_settings(config_path: Path | None = None) -> Settings:
         theme=ThemeSettings(
             name=str(_value(theme, "name", "crystal")),
             font_family=str(_value(theme, "font_family", "DejaVu Sans")),
+        ),
+        background=BackgroundSettings(
+            enabled=bool(_value(background, "enabled", True)),
+            use_daily_image=bool(
+                _value(
+                    background,
+                    "use_daily_image",
+                    _value(performance, "use_daily_wallpapers", True),
+                )
+            ),
+            default_image=str(_value(background, "default_image", "spring.jpg")),
         ),
         location=LocationSettings(
             default_lat=float(_value(location, "default_lat", 48.99407)),

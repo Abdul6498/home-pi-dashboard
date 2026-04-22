@@ -283,6 +283,45 @@ def test_get_status_uses_fajr_window_until_sunrise() -> None:
     assert status.time_left_text == "01h 19m"
 
 
+def test_get_status_after_sunrise_switches_to_before_dhuhr() -> None:
+    service = PrayerTimeService(city="Hessigheim", country="Germany")
+
+    class _Yesterday:
+        timings = {
+            "Isha": datetime(2026, 4, 21, 22, 6),
+        }
+
+    class _Today:
+        timings = {
+            "Imsak": datetime(2026, 4, 22, 4, 29),
+            "Fajr": datetime(2026, 4, 22, 4, 39),
+            "Sunrise": datetime(2026, 4, 22, 6, 19),
+            "Dhuhr": datetime(2026, 4, 22, 13, 22),
+            "Asr": datetime(2026, 4, 22, 18, 16),
+            "Maghrib": datetime(2026, 4, 22, 20, 26),
+            "Isha": datetime(2026, 4, 22, 22, 6),
+        }
+
+    class _Tomorrow:
+        timings = {
+            "Imsak": datetime(2026, 4, 23, 4, 28),
+            "Fajr": datetime(2026, 4, 23, 4, 38),
+        }
+
+    service._schedule_yesterday = _Yesterday()  # noqa: SLF001
+    service._schedule_today = _Today()  # noqa: SLF001
+    service._schedule_tomorrow = _Tomorrow()  # noqa: SLF001
+    service._loaded_for_date = datetime(2026, 4, 22).date()  # noqa: SLF001
+    service._last_refresh_at = datetime(2026, 4, 22, 7, 0)  # noqa: SLF001
+
+    status = service.get_status(datetime(2026, 4, 22, 7, 0))
+
+    assert status.current_salah == "Before Dhuhr"
+    assert status.next_salah == "Dhuhr"
+    assert status.next_time_text == "01:22 PM"
+    assert status.time_left_text == "06h 22m"
+
+
 def test_get_status_uses_isha_window_until_next_imsak() -> None:
     service = PrayerTimeService(city="Hessigheim", country="Germany")
 

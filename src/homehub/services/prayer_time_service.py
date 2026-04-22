@@ -66,7 +66,7 @@ class PrayerTimeService:
         if first_timing is not None and first_timing.tzinfo is not None and tz_now.tzinfo is None:
             tz_now = current_time.replace(tzinfo=first_timing.tzinfo)
 
-        current_salah = self._current_salah_name(tz_now, timings)
+        current_salah = self._current_salah_name(tz_now)
         current_window = self._current_window(tz_now)
 
         if current_window is not None:
@@ -277,17 +277,15 @@ class PrayerTimeService:
             combined = combined.replace(tzinfo=reference.tzinfo)
         return combined
 
-    def _current_salah_name(self, now: datetime, timings: dict[str, datetime]) -> str:
+    def _current_salah_name(self, now: datetime) -> str:
         current_window = self._current_window(now)
         if current_window is not None:
             return current_window[0]
 
-        current = "Before Fajr"
-        for key in self._SALAH_KEYS:
-            moment = timings.get(key)
-            if moment and moment <= now:
-                current = key
-        return current
+        next_name, _ = self._next_salah(now)
+        if next_name is None:
+            return "Salah unavailable"
+        return f"Before {next_name}"
 
     def _refresh_overdue(self, current_time: datetime) -> bool:
         if self._last_refresh_at is None:

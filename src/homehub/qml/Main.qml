@@ -17,6 +17,110 @@ Window {
         color: "#020202"
     }
 
+    Image {
+        id: seasonalBackground
+        anchors.fill: parent
+        source: root.dashboardModel ? root.dashboardModel.backgroundImageUrl : ""
+        fillMode: Image.PreserveAspectCrop
+        smooth: true
+        visible: source !== ""
+        z: 0
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        color: "#66000000"
+        z: 0
+    }
+
+    Item {
+        id: meadow
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        height: 160
+        z: 0
+        visible: !seasonalBackground.visible
+
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            height: 70
+            color: "#08140b"
+            opacity: 0.88
+        }
+
+        Repeater {
+            model: 42
+            delegate: Rectangle {
+                width: 10 + (index % 5) * 4
+                height: 52 + (index % 6) * 14
+                radius: width / 2
+                color: index % 3 === 0 ? "#153a22" : (index % 3 === 1 ? "#1c4b2a" : "#245632")
+                anchors.bottom: parent.bottom
+                x: (index * 25) % root.width
+                rotation: index % 2 === 0 ? -18 + (index % 4) * 4 : 14 - (index % 4) * 4
+                opacity: 0.72
+            }
+        }
+
+        Repeater {
+            model: 26
+            delegate: Rectangle {
+                width: 8 + (index % 4) * 3
+                height: 36 + (index % 5) * 10
+                radius: width / 2
+                color: index % 2 === 0 ? "#2f6239" : "#3f7348"
+                anchors.bottom: parent.bottom
+                x: 8 + (index * 39) % root.width
+                rotation: index % 2 === 0 ? 26 : -24
+                opacity: 0.58
+            }
+        }
+
+        Repeater {
+            model: 8
+            delegate: Item {
+                width: 26
+                height: 70
+                anchors.bottom: parent.bottom
+                x: 34 + index * 118
+
+                Rectangle {
+                    width: 4
+                    height: 38
+                    radius: 2
+                    color: "#24492b"
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.bottom: parent.bottom
+                    opacity: 0.7
+                }
+
+                Rectangle {
+                    id: flowerHead
+                    width: 14
+                    height: 14
+                    radius: 7
+                    color: index % 3 === 0 ? "#e0c36d" : (index % 3 === 1 ? "#cf8aa2" : "#d9ddd8")
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: 34
+                    opacity: 0.55
+                }
+
+                Rectangle {
+                    width: 8
+                    height: 8
+                    radius: 4
+                    color: "#cfc689"
+                    anchors.centerIn: flowerHead
+                    opacity: 0.55
+                }
+            }
+        }
+    }
+
     Item {
         anchors.fill: parent
         anchors.margins: 18
@@ -317,93 +421,6 @@ Window {
                             horizontalAlignment: Text.AlignHCenter
                         }
                     }
-                }
-            }
-        }
-    }
-
-    Item {
-        id: meadow
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        height: 160
-        z: 0
-
-        Rectangle {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
-            height: 70
-            color: "#08140b"
-            opacity: 0.88
-        }
-
-        Repeater {
-            model: 42
-            delegate: Rectangle {
-                width: 10 + (index % 5) * 4
-                height: 52 + (index % 6) * 14
-                radius: width / 2
-                color: index % 3 === 0 ? "#153a22" : (index % 3 === 1 ? "#1c4b2a" : "#245632")
-                anchors.bottom: parent.bottom
-                x: (index * 25) % root.width
-                rotation: index % 2 === 0 ? -18 + (index % 4) * 4 : 14 - (index % 4) * 4
-                opacity: 0.72
-            }
-        }
-
-        Repeater {
-            model: 26
-            delegate: Rectangle {
-                width: 8 + (index % 4) * 3
-                height: 36 + (index % 5) * 10
-                radius: width / 2
-                color: index % 2 === 0 ? "#2f6239" : "#3f7348"
-                anchors.bottom: parent.bottom
-                x: 8 + (index * 39) % root.width
-                rotation: index % 2 === 0 ? 26 : -24
-                opacity: 0.58
-            }
-        }
-
-        Repeater {
-            model: 8
-            delegate: Item {
-                width: 26
-                height: 70
-                anchors.bottom: parent.bottom
-                x: 34 + index * 118
-
-                Rectangle {
-                    width: 4
-                    height: 38
-                    radius: 2
-                    color: "#24492b"
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.bottom: parent.bottom
-                    opacity: 0.7
-                }
-
-                Rectangle {
-                    id: flowerHead
-                    width: 14
-                    height: 14
-                    radius: 7
-                    color: index % 3 === 0 ? "#e0c36d" : (index % 3 === 1 ? "#cf8aa2" : "#d9ddd8")
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.bottom: parent.bottom
-                    anchors.bottomMargin: 34
-                    opacity: 0.55
-                }
-
-                Rectangle {
-                    width: 8
-                    height: 8
-                    radius: 4
-                    color: "#cfc689"
-                    anchors.centerIn: flowerHead
-                    opacity: 0.55
                 }
             }
         }

@@ -8,6 +8,11 @@ height = 600
 name = "crystal"
 font_family = "DejaVu Sans"
 
+[background]
+enabled = true
+use_daily_image = true
+default_image = "spring.jpg"
+
 [location]
 default_lat = 48.99407
 default_lon = 9.18629

@@ -43,6 +43,26 @@ def bundled_background_path(filename: str) -> Path:
     return repo_root / "assets" / "seasonal" / filename
 
 
+def resolve_background_path(image_name: str) -> Path | None:
+    if not image_name.strip():
+        return None
+
+    candidate = Path(image_name).expanduser()
+    if candidate.is_absolute():
+        return candidate if candidate.exists() else None
+
+    repo_root = Path(__file__).resolve().parents[3]
+    search_paths = [
+        repo_root / image_name,
+        repo_root / "assets" / image_name,
+        repo_root / "assets" / "seasonal" / image_name,
+    ]
+    for path in search_paths:
+        if path.exists():
+            return path
+    return None
+
+
 def _cover_resize(source: Image.Image, width: int, height: int) -> Image.Image:
     src_w, src_h = source.size
     scale = max(width / src_w, height / src_h)

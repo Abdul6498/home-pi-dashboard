@@ -35,10 +35,18 @@ The app now supports profile-style settings from `config/settings.toml` (see `co
 Config includes:
 - app window/fullscreen sizing
 - theme + font family
+- background controls
 - module toggles (`clock`, `weather`, `gps`)
 - refresh intervals per module
 - fallback coordinates (defaulted to Hessigheim, Germany)
 - performance profile (`rpi3`) and wallpaper/rendering options
+
+Background config now lives in `config/settings.toml` under `[background]`:
+- `enabled = true` to show a background image
+- `use_daily_image = true` to prefer the daily downloaded wallpaper
+- `default_image = "spring.jpg"` to choose the bundled fallback image
+
+If daily image mode is off or the download is unavailable, the dashboard falls back to the configured `default_image`.
 
 Secrets stay in `.env` (for example `WEATHER_API_KEY`).
 
