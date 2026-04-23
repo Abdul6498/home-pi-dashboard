@@ -152,7 +152,7 @@ Window {
                             width: 230
                             height: 78
                             radius: 24
-                            color: "#2fffffff"
+                            color: "transparent"
                             border.width: 1
                             border.color: "#8ed2a8"
 
@@ -284,24 +284,27 @@ Window {
                             anchors.centerIn: parent
                             spacing: 8
 
-                            Flow {
-                                width: Math.min(root.width * 0.76, 620)
+                            Text {
+                                text: root.dashboardModel ? root.dashboardModel.currentSalahText : "--"
+                                color: "#6ee6ff"
+                                font.pixelSize: 32
+                                font.bold: true
+                                anchors.horizontalCenter: parent.horizontalCenter
+                            }
+
+                            Row {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 spacing: 8
-
-                                Text {
-                                    text: root.dashboardModel ? root.dashboardModel.currentSalahText : "--"
-                                    color: "#6ee6ff"
-                                    font.pixelSize: 32
-                                    font.bold: true
-                                }
+                                visible: root.dashboardModel
+                                         ? root.dashboardModel.currentPrayerBreakdownItems.length > 0
+                                         : false
 
                                 Repeater {
                                     model: root.dashboardModel ? root.dashboardModel.currentPrayerBreakdownItems : []
                                     delegate: Rectangle {
-                                        width: chipLabel.implicitWidth + 20
-                                        height: 34
-                                        radius: 17
+                                        width: chipLabel.implicitWidth + 16
+                                        height: 28
+                                        radius: 14
                                         color: modelData.fillColor
                                         border.width: 1
                                         border.color: modelData.borderColor
@@ -311,12 +314,13 @@ Window {
                                             anchors.centerIn: parent
                                             text: modelData.label
                                             color: modelData.accentColor
-                                            font.pixelSize: 16
+                                            font.pixelSize: 13
                                             font.bold: true
                                         }
                                     }
                                 }
                             }
+
                             Text {
                                 text: root.dashboardModel ? root.dashboardModel.nextSalahText : "--"
                                 color: "#ffe28f"
@@ -509,7 +513,7 @@ Window {
                             width: 230
                             height: 72
                             radius: 24
-                            color: "#2fffffff"
+                            color: "transparent"
                             border.width: 1
                             border.color: "#e7d7a0"
 
@@ -572,7 +576,7 @@ Window {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     radius: 24
-                    color: "#2fffffff"
+                    color: "transparent"
                     border.width: 1
                     border.color: "#9bc7b0"
 
