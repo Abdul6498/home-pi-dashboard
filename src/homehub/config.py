@@ -32,6 +32,7 @@ class ThemeSettings:
 @dataclass(frozen=True)
 class BackgroundSettings:
     enabled: bool
+    mode: str
     use_daily_image: bool
     default_image: str
 
@@ -124,6 +125,7 @@ def load_settings(config_path: Path | None = None) -> Settings:
         ),
         background=BackgroundSettings(
             enabled=bool(_value(background, "enabled", True)),
+            mode=str(_value(background, "mode", "black")).strip().lower() or "black",
             use_daily_image=bool(
                 _value(
                     background,

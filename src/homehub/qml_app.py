@@ -244,6 +244,8 @@ class DashboardController(QObject):
     def _pick_background_url(self) -> str:
         if not self.settings.background.enabled:
             return ""
+        if self.settings.background.mode == "black":
+            return ""
 
         season = season_for_now()
         cache_dir = self.daily_images.cache_dir() / "optimized"

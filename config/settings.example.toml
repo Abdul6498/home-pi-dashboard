@@ -10,6 +10,7 @@ font_family = "DejaVu Sans"
 
 [background]
 enabled = true
+mode = "black"
 use_daily_image = true
 default_image = "spring.jpg"
 
