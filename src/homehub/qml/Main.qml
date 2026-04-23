@@ -11,6 +11,7 @@ Window {
     color: "#020202"
     title: "Home Pi Dashboard"
     property var dashboardModel: (typeof dashboard !== "undefined" && dashboard) ? dashboard : null
+    property bool missedPrayerPopupVisible: root.dashboardModel ? root.dashboardModel.missedPrayerOverlayVisible : false
 
     Rectangle {
         anchors.fill: parent
@@ -401,7 +402,56 @@ Window {
                             anchors.fill: parent
                             onClicked: {
                                 if (root.dashboardModel) {
-                                    root.dashboardModel.clearMissedPrayerNotifications()
+                                    root.dashboardModel.showMissedPrayerOverlay()
+                                }
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        id: missedPrayerPopup
+                        width: 220
+                        height: missedPrayerContent.implicitHeight + 28
+                        z: 4
+                        visible: root.dashboardModel ? root.dashboardModel.missedPrayerOverlayVisible : false
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        radius: 18
+                        color: "#c8141414"
+                        border.width: 1
+                        border.color: "#ffd34d"
+
+                        Column {
+                            id: missedPrayerContent
+                            anchors.fill: parent
+                            anchors.margins: 14
+                            spacing: 8
+
+                            Text {
+                                text: "MISSED PRAYERS"
+                                color: "#fff1bf"
+                                font.pixelSize: 18
+                                font.bold: true
+                                anchors.horizontalCenter: parent.horizontalCenter
+                            }
+
+                            Repeater {
+                                model: root.dashboardModel ? root.dashboardModel.missedPrayerItems : []
+                                delegate: Text {
+                                    width: 180
+                                    text: modelData
+                                    color: "#ffffff"
+                                    font.pixelSize: 16
+                                    font.bold: true
+                                    horizontalAlignment: Text.AlignHCenter
+                                }
+                            }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                if (root.dashboardModel) {
+                                    root.dashboardModel.hideMissedPrayerOverlay()
                                 }
                             }
                         }
@@ -543,6 +593,17 @@ Window {
             source: root.dashboardModel ? root.dashboardModel.postAdhanImageUrl : ""
             fillMode: Image.PreserveAspectFit
             smooth: true
+        }
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        z: 2
+        visible: root.dashboardModel ? root.dashboardModel.missedPrayerOverlayVisible : false
+        onClicked: {
+            if (root.dashboardModel) {
+                root.dashboardModel.hideMissedPrayerOverlay()
+            }
         }
     }
 }

@@ -88,7 +88,9 @@ class DashboardController(QObject):
         self._prayer_alert_marker = ""
         self._dismissed_prayer_alert_marker = ""
         self._auto_closed_prayer_alert_marker = ""
+        self._missed_prayer_items: list[str] = []
         self._missed_prayer_count = 0
+        self._missed_prayer_overlay_visible = False
 
         self._forecast_items: list[dict] = []
         self._market_items: list[dict] = []
@@ -100,14 +102,6 @@ class DashboardController(QObject):
         self._active_adhan_marker = ""
         self._post_adhan_image_url = self._pick_post_adhan_image_url()
         self._post_adhan_visible_until: datetime | None = None
-        # Temporary startup-triggered adhan test for Pi verification.
-        # Enable via .env and remove/disable after confirming playback works.
-        self._test_adhan_after_seconds = max(
-            0, int(os.getenv("HH_TEST_ADHAN_AFTER_SECONDS", "0") or "0")
-        )
-        self._test_adhan_salah = os.getenv("HH_TEST_ADHAN_SALAH", "Fajr").strip() or "Fajr"
-        self._test_adhan_triggered = False
-        self._started_at = datetime.now()
 
         self._timer = QTimer(self)
         self._timer.timeout.connect(self.refresh)
@@ -137,6 +131,9 @@ class DashboardController(QObject):
         if self._background_day != now.date():
             self._background_day = now.date()
             self._background_image_url = self._pick_background_url()
+            self._missed_prayer_items = []
+            self._missed_prayer_count = 0
+            self._missed_prayer_overlay_visible = False
 
         interval = max(1, self.settings.refresh.clock_seconds)
         self._weather_counter += interval
@@ -188,20 +185,29 @@ class DashboardController(QObject):
         self._next_salah_text = f"{next_display} {prayer.next_time_text}".upper()
         self._time_left_text = f"{prayer.time_left_text} LEFT".upper()
         was_alert_active = self._prayer_alert_active
-        marker_moment = prayer.next_time_moment.isoformat() if prayer.next_time_moment else prayer.next_time_text
-        marker = f"{prayer.next_salah}|{marker_moment}"
+        current_is_isha = prayer.current_salah.strip().lower() == "isha"
+        if current_is_isha and prayer.next_time_moment is not None:
+            isha_event_day = prayer.next_time_moment.date() - timedelta(days=1)
+            marker = f"Isha|{isha_event_day.isoformat()}"
+        elif current_is_isha:
+            marker = f"Isha|{now.date().isoformat()}"
+        else:
+            marker_moment = (
+                prayer.next_time_moment.isoformat() if prayer.next_time_moment else prayer.next_time_text
+            )
+            marker = f"{prayer.next_salah}|{marker_moment}"
         if marker != self._prayer_alert_marker:
             self._mark_prayer_missed_if_unacknowledged(self._prayer_alert_marker)
             self._prayer_alert_marker = marker
             self._prayer_alert_active = False
         should_alert = (
             prayer.next_salah != "N/A"
+            and prayer.next_salah != "Imsak"
             and 0 <= prayer.time_left_minutes <= self._prayer_alert_threshold_minutes
         )
         if self._force_prayer_alert:
-            should_alert = prayer.next_salah != "N/A"
+            should_alert = prayer.next_salah not in {"N/A", "Imsak"}
 
-        current_is_isha = prayer.current_salah.strip().lower() == "isha"
         if current_is_isha:
             should_alert = self.prayer.isha_reminder_window_active(
                 now,
@@ -210,6 +216,7 @@ class DashboardController(QObject):
             )
         should_auto_stop = (
             prayer.next_salah != "N/A"
+            and prayer.next_salah != "Imsak"
             and not self._force_prayer_alert
             and 0 <= prayer.time_left_minutes <= 1
         )
@@ -229,7 +236,6 @@ class DashboardController(QObject):
             self.adhan_audio.start_prayer_reminder()
         else:
             self.adhan_audio.stop_prayer_reminder()
-        self._play_test_adhan_if_due(now)
         self._play_adhan_if_due(now)
         self._update_post_adhan_image_state(now)
 
@@ -301,7 +307,14 @@ class DashboardController(QObject):
         if marker == self._auto_closed_prayer_alert_marker:
             return
         self._auto_closed_prayer_alert_marker = marker
+        prayer_name = self._missed_prayer_name_from_marker(marker)
+        if prayer_name:
+            self._missed_prayer_items.append(prayer_name)
         self._missed_prayer_count += 1
+
+    def _missed_prayer_name_from_marker(self, marker: str) -> str:
+        prayer_key = marker.split("|", 1)[0].strip()
+        return self._display_salah_name(prayer_key).upper() if prayer_key else ""
 
     def _pick_post_adhan_image_url(self) -> str:
         asset_roots = [
@@ -320,18 +333,6 @@ class DashboardController(QObject):
                         continue
                     return path.resolve().as_uri()
         return ""
-
-    def _play_test_adhan_if_due(self, now: datetime) -> None:
-        if self._test_adhan_triggered or self._test_adhan_after_seconds <= 0:
-            return
-        if (now - self._started_at).total_seconds() < self._test_adhan_after_seconds:
-            return
-        salah_name = self._test_adhan_salah
-        marker = f"test:{now.date().isoformat()}:{salah_name}"
-        if self.adhan_audio.play_for_salah(salah_name):
-            self._last_adhan_marker = marker
-            self._active_adhan_marker = marker
-        self._test_adhan_triggered = True
 
     def _play_adhan_if_due(self, now: datetime) -> None:
         salah_name = self.prayer.due_salah_for_adhan(now)
@@ -433,6 +434,14 @@ class DashboardController(QObject):
     def missedPrayerCount(self) -> int:
         return self._missed_prayer_count
 
+    @Property("QVariantList", notify=dataChanged)
+    def missedPrayerItems(self) -> list[str]:
+        return self._missed_prayer_items
+
+    @Property(bool, notify=dataChanged)
+    def missedPrayerOverlayVisible(self) -> bool:
+        return self._missed_prayer_overlay_visible and bool(self._missed_prayer_items)
+
     @Slot()
     def acknowledgePrayerAlert(self) -> None:
         self._dismissed_prayer_alert_marker = self._prayer_alert_marker
@@ -443,6 +452,20 @@ class DashboardController(QObject):
     @Slot()
     def clearMissedPrayerNotifications(self) -> None:
         self._missed_prayer_count = 0
+        self._missed_prayer_items = []
+        self._missed_prayer_overlay_visible = False
+        self.dataChanged.emit()
+
+    @Slot()
+    def showMissedPrayerOverlay(self) -> None:
+        if not self._missed_prayer_items:
+            return
+        self._missed_prayer_overlay_visible = True
+        self.dataChanged.emit()
+
+    @Slot()
+    def hideMissedPrayerOverlay(self) -> None:
+        self._missed_prayer_overlay_visible = False
         self.dataChanged.emit()
 
     @Property("QVariantList", notify=dataChanged)
