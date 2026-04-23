@@ -197,7 +197,15 @@ class DashboardController(QObject):
             )
             marker = f"{prayer.next_salah}|{marker_moment}"
         if marker != self._prayer_alert_marker:
-            self._mark_prayer_missed_if_unacknowledged(self._prayer_alert_marker)
+            missed_name_override = (
+                prayer.current_salah
+                if self._is_trackable_prayer_name(prayer.current_salah)
+                else None
+            )
+            self._mark_prayer_missed_if_unacknowledged(
+                self._prayer_alert_marker,
+                prayer_name_override=missed_name_override,
+            )
             self._prayer_alert_marker = marker
             self._prayer_alert_active = False
         should_alert = (
@@ -301,7 +309,12 @@ class DashboardController(QObject):
             return "Maghrib"
         return salah_name
 
-    def _mark_prayer_missed_if_unacknowledged(self, marker: str) -> None:
+    def _mark_prayer_missed_if_unacknowledged(
+        self,
+        marker: str,
+        *,
+        prayer_name_override: str | None = None,
+    ) -> None:
         if not marker:
             return
         if marker == self._dismissed_prayer_alert_marker:
@@ -309,10 +322,18 @@ class DashboardController(QObject):
         if marker == self._auto_closed_prayer_alert_marker:
             return
         self._auto_closed_prayer_alert_marker = marker
-        prayer_name = self._missed_prayer_name_from_marker(marker)
+        prayer_name = (
+            self._display_salah_name(prayer_name_override).upper()
+            if prayer_name_override
+            else self._missed_prayer_name_from_marker(marker)
+        )
         if prayer_name:
             self._missed_prayer_items.append(prayer_name)
         self._missed_prayer_count += 1
+
+    def _is_trackable_prayer_name(self, prayer_name: str) -> bool:
+        key = prayer_name.strip().lower()
+        return key in {"fajr", "dhuhr", "asr", "maghrib", "isha"}
 
     def _missed_prayer_name_from_marker(self, marker: str) -> str:
         prayer_key = marker.split("|", 1)[0].strip()
