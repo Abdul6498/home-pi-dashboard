@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+import json
 from pathlib import Path
 import os
 import platform
@@ -78,6 +79,8 @@ class DashboardController(QObject):
         self._next_salah_text = "--"
         self._time_left_text = "--H --M"
         self._current_salah_text = "--"
+        self._current_prayer_breakdown_text = ""
+        self._current_prayer_breakdown_items: list[dict] = []
         self._prayer_alert_threshold_minutes = max(
             1, int(os.getenv("HH_PRAYER_ALERT_MINUTES", "10") or "10")
         )
@@ -96,6 +99,7 @@ class DashboardController(QObject):
         self._market_items: list[dict] = []
         self._crypto_items: list[dict] = []
         self._stock_items: list[dict] = []
+        self._prayer_breakdowns = self._load_prayer_breakdowns()
         self._background_image_url = self._pick_background_url()
         self._background_day = datetime.now().date()
         self._last_adhan_marker = ""
@@ -181,6 +185,8 @@ class DashboardController(QObject):
 
         prayer = self.prayer.get_status(now)
         self._current_salah_text = self._display_salah_name(prayer.current_salah).upper()
+        self._current_prayer_breakdown_text = self._lookup_prayer_breakdown(prayer.current_salah)
+        self._current_prayer_breakdown_items = self._lookup_prayer_breakdown_items(prayer.current_salah)
         next_display = self._display_salah_name(prayer.next_salah)
         self._next_salah_text = f"{next_display} {prayer.next_time_text}".upper()
         self._time_left_text = f"{prayer.time_left_text} LEFT".upper()
@@ -304,10 +310,119 @@ class DashboardController(QObject):
         if key == "before fajr":
             return "Isha"
         if key == "dhuhr":
-            return "Duhur"
+            return "Dhuhr"
         if key == "maghrib":
             return "Maghrib"
         return salah_name
+
+    def _load_prayer_breakdowns(self) -> dict[str, str]:
+        config_path = Path(__file__).resolve().parents[2] / "config" / "prayers.json"
+        if not config_path.exists():
+            return {}
+
+        try:
+            payload = json.loads(config_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return {}
+
+        prayers = payload.get("daily_prayers", [])
+        if not isinstance(prayers, list):
+            return {}
+
+        breakdowns: dict[str, list[dict]] = {}
+        for prayer in prayers:
+            if not isinstance(prayer, dict):
+                continue
+            name = prayer.get("name", "")
+            breakdown = prayer.get("breakdown", [])
+            key = self._normalize_prayer_lookup_key(str(name))
+            if not key or not isinstance(breakdown, list):
+                continue
+            compact_parts: list[dict] = []
+            for item in breakdown:
+                if not isinstance(item, dict):
+                    continue
+                part_label = self._compact_breakdown_label(str(item.get("type", "")))
+                rakats = item.get("rakats")
+                if not part_label or not isinstance(rakats, int):
+                    continue
+                colors = self._breakdown_colors(part_label)
+                compact_parts.append(
+                    {
+                        "label": f"{part_label}: {rakats}",
+                        "accentColor": colors["accentColor"],
+                        "borderColor": colors["borderColor"],
+                        "fillColor": colors["fillColor"],
+                    }
+                )
+            if compact_parts:
+                breakdowns[key] = compact_parts
+        return breakdowns
+
+    def _lookup_prayer_breakdown(self, salah_name: str) -> str:
+        key = self._normalize_prayer_lookup_key(salah_name)
+        items = self._prayer_breakdowns.get(key, [])
+        return "  ".join(
+            item["label"] for item in items if isinstance(item, dict) and isinstance(item.get("label"), str)
+        )
+
+    def _lookup_prayer_breakdown_items(self, salah_name: str) -> list[dict]:
+        key = self._normalize_prayer_lookup_key(salah_name)
+        items = self._prayer_breakdowns.get(key, [])
+        if not isinstance(items, list):
+            return []
+        return [item for item in items if isinstance(item, dict)]
+
+    def _normalize_prayer_lookup_key(self, salah_name: str) -> str:
+        key = salah_name.strip().lower()
+        if key == "before fajr":
+            return "isha"
+        return key
+
+    def _compact_breakdown_label(self, prayer_type: str) -> str:
+        normalized = prayer_type.strip().lower().replace(")", "")
+        if normalized.startswith("sunnah gm"):
+            return "SGM"
+        if normalized.startswith("sunnah m"):
+            return "SM"
+        if normalized == "fard":
+            return "F"
+        if normalized == "nafl":
+            return "N"
+        if normalized == "witr":
+            return "W"
+        return prayer_type.strip().upper()
+
+    def _breakdown_colors(self, label: str) -> dict[str, str]:
+        if label == "F":
+            return {
+                "accentColor": "#ffd978",
+                "borderColor": "#d4a53d",
+                "fillColor": "#26d4a53d",
+            }
+        if label in {"SM", "SGM"}:
+            return {
+                "accentColor": "#7be8ff",
+                "borderColor": "#3aa8c6",
+                "fillColor": "#203aa8c6",
+            }
+        if label == "N":
+            return {
+                "accentColor": "#bff08a",
+                "borderColor": "#69b84a",
+                "fillColor": "#2069b84a",
+            }
+        if label == "W":
+            return {
+                "accentColor": "#ffb6ff",
+                "borderColor": "#c274c7",
+                "fillColor": "#20c274c7",
+            }
+        return {
+            "accentColor": "#f6fbff",
+            "borderColor": "#6a89a3",
+            "fillColor": "#1cffffff",
+        }
 
     def _mark_prayer_missed_if_unacknowledged(
         self,
@@ -444,6 +559,14 @@ class DashboardController(QObject):
     @Property(str, notify=dataChanged)
     def currentSalahText(self) -> str:
         return self._current_salah_text
+
+    @Property(str, notify=dataChanged)
+    def currentPrayerBreakdownText(self) -> str:
+        return self._current_prayer_breakdown_text
+
+    @Property("QVariantList", notify=dataChanged)
+    def currentPrayerBreakdownItems(self) -> list[dict]:
+        return self._current_prayer_breakdown_items
 
     @Property(bool, notify=dataChanged)
     def prayerAlertActive(self) -> bool:

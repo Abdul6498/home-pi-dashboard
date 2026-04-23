@@ -1,0 +1,56 @@
+{
+  "daily_prayers": [
+    {
+      "name": "Fajr",
+      "time": "Dawn",
+      "total_rakats": 4,
+      "breakdown": [
+        { "type": "Sunnah M)", "rakats": 2 },
+        { "type": "Fard", "rakats": 2 }
+      ]
+    },
+    {
+      "name": "Dhuhr",
+      "time": "Afternoon",
+      "total_rakats": 12,
+      "breakdown": [
+        { "type": "Sunnah M)", "rakats": 4 },
+        { "type": "Fard", "rakats": 4 },
+        { "type": "Sunnah M)", "rakats": 2 },
+        { "type": "Nafl", "rakats": 2 }
+      ]
+    },
+    {
+      "name": "Asr",
+      "time": "Late Afternoon",
+      "total_rakats": 8,
+      "breakdown": [
+        { "type": "Sunnah GM", "rakats": 4 },
+        { "type": "Fard", "rakats": 4 }
+      ]
+    },
+    {
+      "name": "Maghrib",
+      "time": "Sunset",
+      "total_rakats": 7,
+      "breakdown": [
+        { "type": "Fard", "rakats": 3 },
+        { "type": "Sunnah M)", "rakats": 2 },
+        { "type": "Nafl", "rakats": 2 }
+      ]
+    },
+    {
+      "name": "Isha",
+      "time": "Night",
+      "total_rakats": 17,
+      "breakdown": [
+        { "type": "Sunnah GM", "rakats": 4 },
+        { "type": "Fard", "rakats": 4 },
+        { "type": "Sunnah M)", "rakats": 2 },
+        { "type": "Nafl", "rakats": 2 },
+        { "type": "Witr", "rakats": 3 },
+        { "type": "Nafl", "rakats": 2 }
+      ]
+    }
+  ]
+}

@@ -282,14 +282,40 @@ Window {
                         Column {
                             id: prayerBlock
                             anchors.centerIn: parent
-                            spacing: 4
+                            spacing: 8
 
-                            Text {
-                                text: root.dashboardModel ? root.dashboardModel.currentSalahText : "--"
-                                color: "#6ee6ff"
-                                font.pixelSize: 30
-                                font.bold: true
+                            Flow {
+                                width: Math.min(root.width * 0.76, 620)
                                 anchors.horizontalCenter: parent.horizontalCenter
+                                spacing: 8
+
+                                Text {
+                                    text: root.dashboardModel ? root.dashboardModel.currentSalahText : "--"
+                                    color: "#6ee6ff"
+                                    font.pixelSize: 32
+                                    font.bold: true
+                                }
+
+                                Repeater {
+                                    model: root.dashboardModel ? root.dashboardModel.currentPrayerBreakdownItems : []
+                                    delegate: Rectangle {
+                                        width: chipLabel.implicitWidth + 20
+                                        height: 34
+                                        radius: 17
+                                        color: modelData.fillColor
+                                        border.width: 1
+                                        border.color: modelData.borderColor
+
+                                        Text {
+                                            id: chipLabel
+                                            anchors.centerIn: parent
+                                            text: modelData.label
+                                            color: modelData.accentColor
+                                            font.pixelSize: 16
+                                            font.bold: true
+                                        }
+                                    }
+                                }
                             }
                             Text {
                                 text: root.dashboardModel ? root.dashboardModel.nextSalahText : "--"
@@ -331,81 +357,89 @@ Window {
                         }
                     }
 
-                    Rectangle {
-                        width: 92
-                        height: 38
-                        radius: 19
-                        color: "#24000000"
-                        border.width: 1
-                        border.color: "#ffd34d"
-                        visible: root.dashboardModel ? root.dashboardModel.missedPrayerNotificationVisible : false
+                    Row {
                         anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: 10
+                        visible: root.dashboardModel
+                                 ? root.dashboardModel.missedPrayerNotificationVisible
+                                 : false
 
-                        Row {
-                            anchors.centerIn: parent
-                            spacing: 8
+                        Rectangle {
+                            width: 92
+                            height: 38
+                            radius: 19
+                            color: "#24000000"
+                            border.width: 1
+                            border.color: "#ffd34d"
+                            visible: root.dashboardModel ? root.dashboardModel.missedPrayerNotificationVisible : false
 
-                            Canvas {
-                                id: bellIcon
-                                width: 22
-                                height: 22
-                                onPaint: {
-                                    const ctx = getContext("2d")
-                                    ctx.reset()
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: 8
 
-                                    // Bell body
-                                    ctx.fillStyle = "#f5bd1f"
-                                    ctx.beginPath()
-                                    ctx.moveTo(4, 14)
-                                    ctx.lineTo(18, 14)
-                                    ctx.quadraticCurveTo(20, 14, 20, 16)
-                                    ctx.quadraticCurveTo(20, 18, 18, 18)
-                                    ctx.lineTo(4, 18)
-                                    ctx.quadraticCurveTo(2, 18, 2, 16)
-                                    ctx.quadraticCurveTo(2, 14, 4, 14)
-                                    ctx.closePath()
-                                    ctx.fill()
+                                Canvas {
+                                    id: bellIcon
+                                    width: 22
+                                    height: 22
+                                    onPaint: {
+                                        const ctx = getContext("2d")
+                                        ctx.reset()
 
-                                    // Dome
-                                    ctx.beginPath()
-                                    ctx.arc(11, 11, 7, Math.PI, 0, false)
-                                    ctx.fill()
+                                        // Bell body
+                                        ctx.fillStyle = "#f5bd1f"
+                                        ctx.beginPath()
+                                        ctx.moveTo(4, 14)
+                                        ctx.lineTo(18, 14)
+                                        ctx.quadraticCurveTo(20, 14, 20, 16)
+                                        ctx.quadraticCurveTo(20, 18, 18, 18)
+                                        ctx.lineTo(4, 18)
+                                        ctx.quadraticCurveTo(2, 18, 2, 16)
+                                        ctx.quadraticCurveTo(2, 14, 4, 14)
+                                        ctx.closePath()
+                                        ctx.fill()
 
-                                    // Bell top
-                                    ctx.fillRect(10, 3, 2, 2)
+                                        // Dome
+                                        ctx.beginPath()
+                                        ctx.arc(11, 11, 7, Math.PI, 0, false)
+                                        ctx.fill()
 
-                                    // Clapper
-                                    ctx.fillStyle = "#f08a00"
-                                    ctx.beginPath()
-                                    ctx.arc(11, 18, 2, 0, Math.PI * 2, false)
-                                    ctx.fill()
+                                        // Bell top
+                                        ctx.fillRect(10, 3, 2, 2)
+
+                                        // Clapper
+                                        ctx.fillStyle = "#f08a00"
+                                        ctx.beginPath()
+                                        ctx.arc(11, 18, 2, 0, Math.PI * 2, false)
+                                        ctx.fill()
+                                    }
+                                }
+
+                                Rectangle {
+                                    width: 24
+                                    height: 24
+                                    radius: 12
+                                    color: "#ff4a4a"
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: root.dashboardModel ? root.dashboardModel.missedPrayerCount : 0
+                                        color: "white"
+                                        font.pixelSize: 14
+                                        font.bold: true
+                                    }
                                 }
                             }
 
-                            Rectangle {
-                                width: 24
-                                height: 24
-                                radius: 12
-                                color: "#ff4a4a"
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: root.dashboardModel ? root.dashboardModel.missedPrayerCount : 0
-                                    color: "white"
-                                    font.pixelSize: 14
-                                    font.bold: true
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: {
+                                    if (root.dashboardModel) {
+                                        root.dashboardModel.showMissedPrayerOverlay()
+                                    }
                                 }
                             }
                         }
 
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: {
-                                if (root.dashboardModel) {
-                                    root.dashboardModel.showMissedPrayerOverlay()
-                                }
-                            }
-                        }
                     }
 
                     Rectangle {
