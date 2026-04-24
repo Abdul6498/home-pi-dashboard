@@ -238,7 +238,11 @@ class DashboardController(QObject):
             self._mark_prayer_missed_if_unacknowledged(self._prayer_alert_marker)
             self._prayer_alert_active = False
         elif current_is_isha:
-            self._prayer_alert_active = should_alert
+            self._prayer_alert_active = (
+                should_alert
+                and self._dismissed_prayer_alert_marker != self._prayer_alert_marker
+                and self._auto_closed_prayer_alert_marker != self._prayer_alert_marker
+            )
             if was_alert_active and not self._prayer_alert_active:
                 self._mark_prayer_missed_if_unacknowledged(self._prayer_alert_marker)
         else:
