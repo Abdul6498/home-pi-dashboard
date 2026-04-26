@@ -679,7 +679,7 @@ Window {
 
                             Text {
                                 text: modelData.high
-                                color: "#ffffff"
+                                color: "#a13535"
                                 font.pixelSize: 23
                                 font.bold: true
                                 anchors.horizontalCenter: parent.horizontalCenter
@@ -687,7 +687,7 @@ Window {
 
                             Text {
                                 text: modelData.low
-                                color: "#c9d5df"
+                                color: "#3b87c5"
                                 font.pixelSize: 19
                                 font.bold: true
                                 anchors.horizontalCenter: parent.horizontalCenter
