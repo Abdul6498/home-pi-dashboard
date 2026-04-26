@@ -6,6 +6,10 @@ A modular Raspberry Pi 3 home dashboard designed for a 7-inch HDMI display.
 
 ![Home Pi Dashboard architecture](docs/images/home-pi-dashboard-architecture.png)
 
+## Current UI
+
+![Home Pi Dashboard UI](docs/images/app_home_pi.png)
+
 ## Vision
 
 Start with a beautiful full-screen clock and weather panel, then grow into a smart home wall dashboard with modular features.
