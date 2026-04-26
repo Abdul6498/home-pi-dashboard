@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Window
-import QtQuick.Layouts
 import "."
 
 Window {
@@ -8,293 +7,396 @@ Window {
     width: 1024
     height: 600
     visible: false
-    color: "#020202"
+    color: "#120f0b"
     title: "Home Pi Dashboard"
+
     property var dashboardModel: (typeof dashboard !== "undefined" && dashboard) ? dashboard : null
     property bool missedPrayerPopupVisible: root.dashboardModel ? root.dashboardModel.missedPrayerOverlayVisible : false
 
+    property url qiyamIcon: Qt.resolvedUrl("../assets/qiyam.png")
+    property url rukuIcon: Qt.resolvedUrl("../assets/ruku.png")
+    property url sajdaIcon: Qt.resolvedUrl("../assets/sajda.png")
+    property url jalsaIcon: Qt.resolvedUrl("../assets/jalsa.png")
+    property url itidalIcon: Qt.resolvedUrl("../assets/itidal.png")
+    property url taslimIcon: Qt.resolvedUrl("../assets/taslim.png")
+
+    property int currentPoseIndex: root.dashboardModel ? root.dashboardModel.testSalahProgressIndex : 3
+    property int currentRakatIndex: root.dashboardModel ? root.dashboardModel.testRakatIndex : 1
+    property var salahProgressStages: [
+        { "label": "QIYAM", "icon": qiyamIcon },
+        { "label": "RUKU", "icon": rukuIcon },
+        { "label": "I'TIDAL", "icon": itidalIcon },
+        { "label": "SAJDA", "icon": sajdaIcon },
+        { "label": "JALSA", "icon": jalsaIcon },
+        { "label": "SAJDA", "icon": sajdaIcon },
+        { "label": "TASLIM", "icon": taslimIcon }
+    ]
+    property var rakatStages: [
+        { "label": "Rakat 1", "value": "1" },
+        { "label": "Rakat 2", "value": "2" },
+        { "label": "Rakat 3", "value": "3" },
+        { "label": "Rakat 4", "value": "4" },
+        { "label": "Final", "value": "Ø" }
+    ]
+    property real timeProgressValue: root.dashboardModel ? root.dashboardModel.timeLeftProgressValue : 0.0
+
     Rectangle {
         anchors.fill: parent
-        color: "#020202"
-    }
-
-    Image {
-        id: seasonalBackground
-        anchors.fill: parent
-        source: root.dashboardModel ? root.dashboardModel.backgroundImageUrl : ""
-        fillMode: Image.PreserveAspectCrop
-        smooth: true
-        visible: source !== ""
-        z: 0
-    }
-
-    Rectangle {
-        anchors.fill: parent
-        color: "#4a000000"
-        z: 0
+        color: "#000000"
     }
 
     Item {
-        id: meadow
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        height: 160
-        z: 0
-        visible: !seasonalBackground.visible
-
-        Rectangle {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
-            height: 70
-            color: "#08140b"
-            opacity: 0.88
-        }
-
-        Repeater {
-            model: 42
-            delegate: Rectangle {
-                width: 10 + (index % 5) * 4
-                height: 52 + (index % 6) * 14
-                radius: width / 2
-                color: index % 3 === 0 ? "#153a22" : (index % 3 === 1 ? "#1c4b2a" : "#245632")
-                anchors.bottom: parent.bottom
-                x: (index * 25) % root.width
-                rotation: index % 2 === 0 ? -18 + (index % 4) * 4 : 14 - (index % 4) * 4
-                opacity: 0.72
-            }
-        }
-
-        Repeater {
-            model: 26
-            delegate: Rectangle {
-                width: 8 + (index % 4) * 3
-                height: 36 + (index % 5) * 10
-                radius: width / 2
-                color: index % 2 === 0 ? "#2f6239" : "#3f7348"
-                anchors.bottom: parent.bottom
-                x: 8 + (index * 39) % root.width
-                rotation: index % 2 === 0 ? 26 : -24
-                opacity: 0.58
-            }
-        }
-
-        Repeater {
-            model: 8
-            delegate: Item {
-                width: 26
-                height: 70
-                anchors.bottom: parent.bottom
-                x: 34 + index * 118
-
-                Rectangle {
-                    width: 4
-                    height: 38
-                    radius: 2
-                    color: "#24492b"
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.bottom: parent.bottom
-                    opacity: 0.7
-                }
-
-                Rectangle {
-                    id: flowerHead
-                    width: 14
-                    height: 14
-                    radius: 7
-                    color: index % 3 === 0 ? "#e0c36d" : (index % 3 === 1 ? "#cf8aa2" : "#d9ddd8")
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.bottom: parent.bottom
-                    anchors.bottomMargin: 34
-                    opacity: 0.55
-                }
-
-                Rectangle {
-                    width: 8
-                    height: 8
-                    radius: 4
-                    color: "#cfc689"
-                    anchors.centerIn: flowerHead
-                    opacity: 0.55
-                }
-            }
-        }
+        id: tabletShell
+        anchors.fill: parent
     }
 
     Item {
-        anchors.fill: parent
-        anchors.margins: 18
-        z: 1
+        id: contentArea
+        anchors.fill: tabletShell
+        anchors.leftMargin: 6
+        anchors.rightMargin: 6
+        anchors.topMargin: 6
+        anchors.bottomMargin: 6
 
-        RowLayout {
-            id: topRow
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.bottom: forecastRow.top
-            anchors.bottomMargin: 14
-            spacing: 18
+        Column {
+            id: dashboardColumn
+            anchors.fill: parent
+            spacing: 8
 
-            Item {
-                Layout.fillWidth: true
-                Layout.preferredWidth: 0.88
-                Layout.fillHeight: true
+            Row {
+                id: headerRow
+                width: parent.width
+                height: 88
+                spacing: 12
 
-                Column {
-                    anchors.left: parent.left
-                    anchors.top: parent.top
-                    spacing: 10
+                Rectangle {
+                    id: dateCard
+                    width: 218
+                    height: parent.height
+                    radius: 14
+                    color: "transparent"
+                    border.width: 1
+                    border.color: "#364048"
 
-                    Repeater {
-                        model: root.dashboardModel ? root.dashboardModel.cryptoItems : []
-                        delegate: Rectangle {
-                            width: 230
-                            height: 78
-                            radius: 24
-                            color: "transparent"
-                            border.width: 1
-                            border.color: "#8ed2a8"
-
-                            Item {
-                                anchors.fill: parent
-                                anchors.leftMargin: 16
-                                anchors.rightMargin: 16
-
-                                Text {
-                                    id: symbolText
-                                    text: modelData.symbol
-                                    color: "#ffffff"
-                                    font.pixelSize: 18
-                                    font.bold: true
-                                    anchors.left: parent.left
-                                    anchors.top: parent.top
-                                    anchors.topMargin: 13
-                                }
-                                Text {
-                                    text: modelData.price
-                                    color: modelData.priceColor
-                                    font.pixelSize: 15
-                                    font.bold: true
-                                    anchors.left: symbolText.right
-                                    anchors.leftMargin: 6
-                                    anchors.right: parent.right
-                                    anchors.top: parent.top
-                                    anchors.topMargin: 13
-                                    elide: Text.ElideRight
-                                }
-                                Text {
-                                    id: changeText
-                                    text: modelData.change
-                                    color: modelData.changeColor
-                                    font.pixelSize: 15
-                                    font.bold: true
-                                    anchors.left: parent.left
-                                    anchors.top: symbolText.bottom
-                                    anchors.topMargin: 8
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            Item {
-                Layout.fillWidth: true
-                Layout.preferredWidth: 1.7
-                Layout.fillHeight: true
-
-                Column {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.top: parent.top
-                    anchors.topMargin: 4
-                    spacing: 10
-
-                    Row {
-                        spacing: 6
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        Text {
-                            text: root.dashboardModel ? root.dashboardModel.timeText : "--:--"
-                            color: "#8dff2f"
-                            font.pixelSize: 96
-                            font.family: "DejaVu Sans"
-                            font.bold: true
-                        }
-
-                        Text {
-                            text: root.dashboardModel ? root.dashboardModel.secondsText : "--"
-                            color: "#8dff2f"
-                            font.pixelSize: 34
-                            font.family: "DejaVu Sans"
-                            font.bold: true
-                            anchors.bottom: parent.bottom
-                            anchors.bottomMargin: 18
-                        }
-
-                        Text {
-                            text: root.dashboardModel ? root.dashboardModel.periodText : "--"
-                            color: "#8dff2f"
-                            font.pixelSize: 28
-                            font.family: "DejaVu Sans"
-                            font.bold: true
-                            anchors.bottom: parent.bottom
-                            anchors.bottomMargin: 20
-                        }
+                    Rectangle {
+                        width: 4
+                        height: parent.height - 28
+                        radius: 2
+                        color: "#9ef7dd"
+                        anchors.left: parent.left
+                        anchors.leftMargin: 10
+                        anchors.verticalCenter: parent.verticalCenter
                     }
 
-                    Text {
-                        text: root.dashboardModel
-                              ? (root.dashboardModel.weekdayText + "  " + root.dashboardModel.dateText + "  " + root.dashboardModel.yearText)
-                              : "--- --- ----"
-                        color: "#f0f7ff"
-                        font.pixelSize: 22
-                        font.bold: true
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
+                    Column {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 22
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 2
 
-                    Row {
-                        spacing: 10
-                        anchors.horizontalCenter: parent.horizontalCenter
-
-                        WeatherIcon {
-                            width: 34
-                            height: 28
-                            kind: root.dashboardModel ? root.dashboardModel.weatherConditionKind : "cloudy"
-                            primaryColor: root.dashboardModel ? root.dashboardModel.weatherIconColor : "#68c8ff"
-                            secondaryColor: "#dff1ff"
+                        Text {
+                            text: root.dashboardModel ? root.dashboardModel.weekdayText + "," : "---"
+                            color: "#f5f8fb"
+                            font.pixelSize: 22
+                            font.bold: true
                         }
                         Text {
-                            text: root.dashboardModel
-                                  ? (root.dashboardModel.weatherSummary.toUpperCase() + "  " + root.dashboardModel.temperatureText + "  " + root.dashboardModel.humidityText)
-                                  : "--"
-                            color: "#ffffff"
-                            font.pixelSize: 20
+                            text: root.dashboardModel ? (root.dashboardModel.dateText + " " + root.dashboardModel.yearText) : "---"
+                            color: "#dbe4eb"
+                            font.pixelSize: 15
                             font.bold: true
                         }
                     }
 
                     Item {
-                        id: prayerAlertBox
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        width: prayerBlock.implicitWidth
-                        height: prayerBlock.implicitHeight
+                        id: dateNotificationAnchor
+                        anchors.left: parent.left
+                        anchors.leftMargin: 142
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 54
+                        height: 28
+                        visible: root.dashboardModel ? root.dashboardModel.missedPrayerNotificationVisible : false
 
-                        Column {
-                            id: prayerBlock
-                            anchors.centerIn: parent
-                            spacing: 8
+                        Canvas {
+                            anchors.left: parent.left
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 20
+                            height: 20
+                            onPaint: {
+                                const ctx = getContext("2d")
+                                ctx.reset()
+                                ctx.fillStyle = "#f5bd1f"
+                                ctx.beginPath()
+                                ctx.moveTo(4, 13)
+                                ctx.lineTo(16, 13)
+                                ctx.quadraticCurveTo(18, 13, 18, 15)
+                                ctx.quadraticCurveTo(18, 17, 16, 17)
+                                ctx.lineTo(4, 17)
+                                ctx.quadraticCurveTo(2, 17, 2, 15)
+                                ctx.quadraticCurveTo(2, 13, 4, 13)
+                                ctx.closePath()
+                                ctx.fill()
+                                ctx.beginPath()
+                                ctx.arc(10, 10, 6, Math.PI, 0, false)
+                                ctx.fill()
+                                ctx.fillRect(9, 2, 2, 2)
+                                ctx.fillStyle = "#f08a00"
+                                ctx.beginPath()
+                                ctx.arc(10, 17, 2, 0, Math.PI * 2, false)
+                                ctx.fill()
+                            }
+                        }
+
+                        Rectangle {
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 24
+                            height: 24
+                            radius: 12
+                            color: "#ff4a4a"
 
                             Text {
-                                text: root.dashboardModel ? root.dashboardModel.currentSalahText : "--"
-                                color: "#6ee6ff"
-                                font.pixelSize: 32
+                                anchors.centerIn: parent
+                                text: root.dashboardModel ? root.dashboardModel.missedPrayerCount : 0
+                                color: "white"
+                                font.pixelSize: 14
                                 font.bold: true
-                                anchors.horizontalCenter: parent.horizontalCenter
+                            }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                if (root.dashboardModel) {
+                                    root.dashboardModel.showMissedPrayerOverlay()
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width - 218 - 190 - 24
+                    height: parent.height
+                    radius: 14
+                    color: "transparent"
+                    border.width: 1
+                    border.color: "#364048"
+
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 8
+
+                        Text {
+                            text: root.dashboardModel ? root.dashboardModel.timeText : "--:--"
+                            color: "#f8fbff"
+                            font.pixelSize: 92
+                            font.bold: true
+                        }
+
+                        Text {
+                            text: root.dashboardModel ? root.dashboardModel.secondsText : "--"
+                            color: "#c8f7ee"
+                            font.pixelSize: 32
+                            font.bold: true
+                            anchors.bottom: parent.bottom
+                            anchors.bottomMargin: 14
+                        }
+
+                        Text {
+                            text: root.dashboardModel ? root.dashboardModel.periodText : "--"
+                            color: "#8ce9d4"
+                            font.pixelSize: 30
+                            font.bold: true
+                            anchors.bottom: parent.bottom
+                            anchors.bottomMargin: 14
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: 190
+                    height: parent.height
+                    radius: 14
+                    color: "transparent"
+                    border.width: 1
+                    border.color: "#364048"
+
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 2
+
+                        Row {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            spacing: 6
+
+                            WeatherIcon {
+                                width: 22
+                                height: 22
+                                kind: root.dashboardModel ? root.dashboardModel.weatherConditionKind : "cloudy"
+                                primaryColor: root.dashboardModel ? root.dashboardModel.weatherIconColor : "#68c8ff"
+                                secondaryColor: "#f4fbff"
+                            }
+
+                            Text {
+                                text: root.dashboardModel ? root.dashboardModel.weatherSummary.toUpperCase() : "--"
+                                color: "#f8fbff"
+                                font.pixelSize: 14
+                                font.bold: true
+                            }
+                        }
+
+                        Text {
+                            text: root.dashboardModel ? root.dashboardModel.temperatureText : "--"
+                            color: "#ffffff"
+                            font.pixelSize: 24
+                            font.bold: true
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+
+                        Text {
+                            text: root.dashboardModel ? root.dashboardModel.humidityText + " HUMIDITY" : "--"
+                            color: "#dde6ee"
+                            font.pixelSize: 13
+                            font.bold: true
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+                    }
+                }
+            }
+
+            Item {
+                id: prayerAlertBox
+                width: parent.width
+                height: 332
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: 16
+                    color: "transparent"
+                    border.width: 1
+                    border.color: "#364048"
+                }
+
+                Column {
+                    anchors.fill: parent
+                    anchors.margins: 16
+                    spacing: 8
+
+                    Item {
+                        width: parent.width
+                        height: 86
+
+                        Column {
+                            anchors.fill: parent
+                            spacing: 8
+
+                            Item {
+                                width: parent.width
+                                height: 54
+
+                                Row {
+                                    anchors.fill: parent
+                                    spacing: 8
+
+                                    Item {
+                                        width: parent.width * 0.26
+                                        height: parent.height
+
+                                        Rectangle {
+                                            width: 200
+                                            height: 52
+                                            anchors.centerIn: parent
+                                            radius: 12
+                                            color: "transparent"
+                                            border.width: 1
+                                            border.color: "#343d45"
+
+                                            Column {
+                                                anchors.centerIn: parent
+                                                spacing: 1
+
+                                                Text {
+                                                    anchors.horizontalCenter: parent.horizontalCenter
+                                                    text: root.dashboardModel ? root.dashboardModel.hijriMonthText : ""
+                                                    color: "#8cf4d9"
+                                                    font.pixelSize: 18
+                                                    font.bold: true
+                                                }
+
+                                                Text {
+                                                    anchors.horizontalCenter: parent.horizontalCenter
+                                                    text: root.dashboardModel ? root.dashboardModel.hijriDateText : ""
+                                                    color: "#f8fbff"
+                                                    font.pixelSize: 24
+                                                    font.bold: true
+                                                }
+
+                                                Text {
+                                                    anchors.horizontalCenter: parent.horizontalCenter
+                                                    text: root.dashboardModel ? root.dashboardModel.hijriYearText : ""
+                                                    color: "#d7e4ee"
+                                                    font.pixelSize: 15
+                                                    font.bold: true
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Item {
+                                        width: parent.width * 0.48
+                                        height: parent.height
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: root.dashboardModel ? root.dashboardModel.currentSalahText : "PRAYER"
+                                            color: "#8cf4d9"
+                                            font.pixelSize: 38
+                                            font.bold: true
+                                        }
+                                    }
+
+                                    Item {
+                                        width: parent.width * 0.26
+                                        height: parent.height
+
+                                        Rectangle {
+                                            width: 200
+                                            height: 52
+                                            anchors.centerIn: parent
+                                            radius: 12
+                                            color: "transparent"
+                                            border.width: 1
+                                            border.color: "#343d45"
+
+                                            Column {
+                                                anchors.centerIn: parent
+                                                spacing: 2
+
+                                                Text {
+                                                    anchors.horizontalCenter: parent.horizontalCenter
+                                                    text: "PRAYER TIME"
+                                                    color: "#d7e4ee"
+                                                    font.pixelSize: 14
+                                                    font.bold: true
+                                                }
+
+                                                Text {
+                                                    anchors.horizontalCenter: parent.horizontalCenter
+                                                    text: root.dashboardModel ? root.dashboardModel.currentSalahTimeText : "--:--"
+                                                    color: "#f8fbff"
+                                                    font.pixelSize: 28
+                                                    font.bold: true
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
 
                             Row {
+                                spacing: 6
                                 anchors.horizontalCenter: parent.horizontalCenter
-                                spacing: 8
                                 visible: root.dashboardModel
                                          ? root.dashboardModel.currentPrayerBreakdownItems.length > 0
                                          : false
@@ -302,319 +404,359 @@ Window {
                                 Repeater {
                                     model: root.dashboardModel ? root.dashboardModel.currentPrayerBreakdownItems : []
                                     delegate: Rectangle {
-                                        width: chipLabel.implicitWidth + 16
-                                        height: 28
-                                        radius: 14
+                                        width: chipTextTop.implicitWidth + 14
+                                        height: 22
+                                        radius: 11
                                         color: modelData.fillColor
                                         border.width: 1
                                         border.color: modelData.borderColor
 
                                         Text {
-                                            id: chipLabel
+                                            id: chipTextTop
                                             anchors.centerIn: parent
                                             text: modelData.label
                                             color: modelData.accentColor
-                                            font.pixelSize: 13
+                                            font.pixelSize: 10
                                             font.bold: true
                                         }
                                     }
                                 }
                             }
-
-                            Text {
-                                text: root.dashboardModel ? root.dashboardModel.nextSalahText : "--"
-                                color: "#ffe28f"
-                                font.pixelSize: 31
-                                font.bold: true
-                                anchors.horizontalCenter: parent.horizontalCenter
-                            }
-                            Text {
-                                text: root.dashboardModel ? root.dashboardModel.timeLeftText : "--H --M LEFT"
-                                color: "#b8ff69"
-                                font.pixelSize: 22
-                                font.bold: true
-                                anchors.horizontalCenter: parent.horizontalCenter
-                            }
                         }
+                    }
 
-                        SequentialAnimation on opacity {
-                            id: prayerBlink
-                            running: root.dashboardModel ? root.dashboardModel.prayerAlertActive : false
-                            loops: Animation.Infinite
-                            NumberAnimation { to: 0.2; duration: 420 }
-                            NumberAnimation { to: 1.0; duration: 420 }
-                            onRunningChanged: {
-                                if (!running) {
-                                    prayerAlertBox.opacity = 1.0
-                                }
-                            }
-                        }
+                    Rectangle {
+                        width: parent.width
+                        height: 104
+                        radius: 12
+                        color: "transparent"
+                        border.width: 1
+                        border.color: "#343d45"
 
-                        MouseArea {
+                        Item {
                             anchors.fill: parent
-                            onClicked: {
-                                if (root.dashboardModel) {
-                                    root.dashboardModel.acknowledgePrayerAlert()
+                            anchors.margins: 12
+
+                            Text {
+                                text: "SALAH PROGRESS"
+                                color: "#ffffff"
+                                font.pixelSize: 16
+                                font.bold: true
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                anchors.top: parent.top
+                            }
+
+                            Rectangle {
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.top: parent.top
+                                anchors.topMargin: 34
+                                height: 4
+                                radius: 2
+                                color: "#374149"
+                            }
+
+                            Rectangle {
+                                anchors.left: parent.left
+                                anchors.top: parent.top
+                                anchors.topMargin: 34
+                                width: (parent.width / Math.max(1, root.salahProgressStages.length - 1)) * Math.min(root.currentPoseIndex, root.salahProgressStages.length - 1)
+                                height: 4
+                                radius: 2
+                                color: "#8cf4d9"
+                            }
+
+                            Row {
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.bottom: parent.bottom
+                                spacing: 0
+
+                                Repeater {
+                                    model: root.salahProgressStages
+                                    delegate: Item {
+                                        width: (parent.width / root.salahProgressStages.length)
+                                        height: 54
+
+                                        property bool active: index <= root.currentPoseIndex
+
+                                        Rectangle {
+                                            width: 38
+                                            height: 38
+                                            radius: 19
+                                            anchors.horizontalCenter: parent.horizontalCenter
+                                            anchors.top: parent.top
+                                            color: active ? "#8cf4d9" : "#3f464f"
+                                            border.width: 1
+                                            border.color: active ? "#b7fff0" : "#59626b"
+
+                                            Image {
+                                                anchors.centerIn: parent
+                                                width: 22
+                                                height: 22
+                                                source: modelData.icon
+                                                fillMode: Image.PreserveAspectFit
+                                                opacity: active ? 1.0 : 0.52
+                                            }
+                                        }
+
+                                        Text {
+                                            anchors.horizontalCenter: parent.horizontalCenter
+                                            anchors.bottom: parent.bottom
+                                            text: modelData.label
+                                            color: active ? "#f8fbff" : "#c5ced7"
+                                            font.pixelSize: 12
+                                            font.bold: true
+                                        }
+                                    }
                                 }
-                                prayerAlertBox.opacity = 1.0
                             }
                         }
                     }
 
                     Row {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        spacing: 10
-                        visible: root.dashboardModel
-                                 ? root.dashboardModel.missedPrayerNotificationVisible
-                                 : false
+                        width: parent.width
+                        spacing: 12
 
                         Rectangle {
-                            width: 92
-                            height: 38
-                            radius: 19
-                            color: "#24000000"
+                            id: rakatPanel
+                            width: (parent.width - 12) / 2
+                            height: 104
+                            radius: 12
+                            color: "transparent"
                             border.width: 1
-                            border.color: "#ffd34d"
-                            visible: root.dashboardModel ? root.dashboardModel.missedPrayerNotificationVisible : false
+                            border.color: "#343d45"
 
-                            Row {
+                            Column {
                                 anchors.centerIn: parent
-                                spacing: 8
+                                width: parent.width - 24
+                                spacing: 10
 
-                                Canvas {
-                                    id: bellIcon
-                                    width: 22
-                                    height: 22
-                                    onPaint: {
-                                        const ctx = getContext("2d")
-                                        ctx.reset()
+                                Text {
+                                    text: "RAKAT"
+                                    color: "#dfe8f0"
+                                    font.pixelSize: 18
+                                    font.bold: true
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                }
 
-                                        // Bell body
-                                        ctx.fillStyle = "#f5bd1f"
-                                        ctx.beginPath()
-                                        ctx.moveTo(4, 14)
-                                        ctx.lineTo(18, 14)
-                                        ctx.quadraticCurveTo(20, 14, 20, 16)
-                                        ctx.quadraticCurveTo(20, 18, 18, 18)
-                                        ctx.lineTo(4, 18)
-                                        ctx.quadraticCurveTo(2, 18, 2, 16)
-                                        ctx.quadraticCurveTo(2, 14, 4, 14)
-                                        ctx.closePath()
-                                        ctx.fill()
+                                Row {
+                                    id: rakatRow
+                                    spacing: 10
+                                    anchors.horizontalCenter: parent.horizontalCenter
 
-                                        // Dome
-                                        ctx.beginPath()
-                                        ctx.arc(11, 11, 7, Math.PI, 0, false)
-                                        ctx.fill()
+                                    Repeater {
+                                        model: root.rakatStages
+                                        delegate: Column {
+                                            spacing: 4
 
-                                        // Bell top
-                                        ctx.fillRect(10, 3, 2, 2)
+                                            Rectangle {
+                                                width: 50
+                                                height: 50
+                                                radius: 25
+                                                color: index <= root.currentRakatIndex ? "#8cf4d9" : "#353c44"
+                                                border.width: 1
+                                                border.color: index <= root.currentRakatIndex ? "#b7fff0" : "#59626b"
+                                                anchors.horizontalCenter: parent.horizontalCenter
 
-                                        // Clapper
-                                        ctx.fillStyle = "#f08a00"
-                                        ctx.beginPath()
-                                        ctx.arc(11, 18, 2, 0, Math.PI * 2, false)
-                                        ctx.fill()
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    text: modelData.value
+                                                    color: index <= root.currentRakatIndex ? "#09221b" : "#ffffff"
+                                                    font.pixelSize: 26
+                                                    font.bold: true
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                            }
+                        }
+
+                        Rectangle {
+                            id: reminderPanel
+                            width: (parent.width - 12) / 2
+                            height: 104
+                            radius: 12
+                            color: "transparent"
+                            border.width: 1
+                            border.color: "#343d45"
+
+                            Column {
+                                anchors.centerIn: parent
+                                width: parent.width - 28
+                                spacing: 10
+
+                                Row {
+                                    width: parent.width
+
+                                    Text {
+                                        text: root.dashboardModel ? (root.dashboardModel.nextSalahText.split(" ")[0] + " / TIME LEFT") : "TIME LEFT"
+                                        color: "#ffffff"
+                                        font.pixelSize: 18
+                                        font.bold: true
+                                    }
+
+                                    Item { width: Math.max(0, parent.width - timeLeftValue.implicitWidth - 170) }
+
+                                    Text {
+                                        id: timeLeftValue
+                                        text: root.dashboardModel ? root.dashboardModel.timeLeftText.replace(" LEFT", "") : "--:--"
+                                        color: "#f1f5f8"
+                                        font.pixelSize: 18
+                                        font.bold: true
                                     }
                                 }
 
                                 Rectangle {
-                                    width: 24
-                                    height: 24
-                                    radius: 12
-                                    color: "#ff4a4a"
+                                    width: parent.width
+                                    height: 18
+                                    radius: 9
+                                    color: "#384149"
 
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: root.dashboardModel ? root.dashboardModel.missedPrayerCount : 0
-                                        color: "white"
-                                        font.pixelSize: 14
-                                        font.bold: true
+                                    Rectangle {
+                                        width: parent.width * root.timeProgressValue
+                                        height: parent.height
+                                        radius: 9
+                                        color: "#79f0d2"
                                     }
-                                }
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    if (root.dashboardModel) {
-                                        root.dashboardModel.showMissedPrayerOverlay()
-                                    }
-                                }
-                            }
-                        }
-
-                    }
-
-                    Rectangle {
-                        id: missedPrayerPopup
-                        width: 220
-                        height: missedPrayerContent.implicitHeight + 28
-                        z: 4
-                        visible: root.dashboardModel ? root.dashboardModel.missedPrayerOverlayVisible : false
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        radius: 18
-                        color: "#c8141414"
-                        border.width: 1
-                        border.color: "#ffd34d"
-
-                        Column {
-                            id: missedPrayerContent
-                            anchors.fill: parent
-                            anchors.margins: 14
-                            spacing: 8
-
-                            Text {
-                                text: "MISSED PRAYERS"
-                                color: "#fff1bf"
-                                font.pixelSize: 18
-                                font.bold: true
-                                anchors.horizontalCenter: parent.horizontalCenter
-                            }
-
-                            Repeater {
-                                model: root.dashboardModel ? root.dashboardModel.missedPrayerItems : []
-                                delegate: Text {
-                                    width: 180
-                                    text: modelData
-                                    color: "#ffffff"
-                                    font.pixelSize: 16
-                                    font.bold: true
-                                    horizontalAlignment: Text.AlignHCenter
-                                }
-                            }
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: {
-                                if (root.dashboardModel) {
-                                    root.dashboardModel.hideMissedPrayerOverlay()
                                 }
                             }
                         }
                     }
                 }
+
+                SequentialAnimation {
+                    id: reminderBlink
+                    running: root.dashboardModel ? root.dashboardModel.prayerAlertActive : false
+                    loops: Animation.Infinite
+                    PropertyAnimation { target: reminderPanel; property: "opacity"; to: 0.35; duration: 420 }
+                    PropertyAnimation { target: reminderPanel; property: "opacity"; to: 1.0; duration: 420 }
+                    onRunningChanged: {
+                        if (!running) {
+                            reminderPanel.opacity = 1.0
+                        }
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        if (root.dashboardModel) {
+                            root.dashboardModel.acknowledgePrayerAlert()
+                        }
+                        reminderPanel.opacity = 1.0
+                    }
+                }
             }
 
-            Item {
-                Layout.fillWidth: true
-                Layout.preferredWidth: 0.88
-                Layout.fillHeight: true
+            Row {
+                id: forecastRow
+                width: parent.width
+                height: dashboardColumn.height - headerRow.height - prayerAlertBox.height - (dashboardColumn.spacing * 2)
+                spacing: 10
 
-                Column {
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    spacing: 10
+                Repeater {
+                    model: root.dashboardModel ? root.dashboardModel.forecastItems.slice(0, 6) : []
+                    delegate: Rectangle {
+                        width: root.dashboardModel
+                               ? Math.floor((forecastRow.width - ((Math.min(root.dashboardModel.forecastItems.length, 6) - 1) * forecastRow.spacing)) / Math.min(root.dashboardModel.forecastItems.length, 6))
+                               : 120
+                        height: parent.height
+                        radius: 14
+                        color: "transparent"
+                        border.width: 1
+                        border.color: "#384149"
 
-                    Repeater {
-                        model: root.dashboardModel ? root.dashboardModel.stockItems : []
-                        delegate: Rectangle {
-                            width: 230
-                            height: 72
-                            radius: 24
-                            color: "transparent"
-                            border.width: 1
-                            border.color: "#e7d7a0"
+                        Column {
+                            anchors.centerIn: parent
+                            spacing: 3
 
-                            Item {
-                                anchors.fill: parent
-                                anchors.leftMargin: 16
-                                anchors.rightMargin: 14
+                            Text {
+                                text: modelData.day
+                                color: "#f7fbff"
+                                font.pixelSize: 25
+                                font.bold: true
+                                anchors.horizontalCenter: parent.horizontalCenter
+                            }
 
-                                Text {
-                                    id: stockSymbolText
-                                    text: modelData.symbol
-                                    color: "#fffbe9"
-                                    font.pixelSize: 15
-                                    font.bold: true
-                                    anchors.left: parent.left
-                                    anchors.top: parent.top
-                                    anchors.topMargin: 13
-                                }
-                                Text {
-                                    id: stockPriceText
-                                    text: modelData.price
-                                    color: modelData.priceColor
-                                    font.pixelSize: 14
-                                    font.bold: true
-                                    anchors.left: stockSymbolText.right
-                                    anchors.leftMargin: 5
-                                    anchors.right: parent.right
-                                    anchors.top: parent.top
-                                    anchors.topMargin: 13
-                                    elide: Text.ElideRight
-                                }
-                                Text {
-                                    id: stockChangeText
-                                    text: modelData.change
-                                    color: modelData.changeColor
-                                    font.pixelSize: 14
-                                    font.bold: true
-                                    anchors.left: parent.left
-                                    anchors.top: stockSymbolText.bottom
-                                    anchors.topMargin: 7
-                                }
+                            WeatherIcon {
+                                width: 26
+                                height: 26
+                                kind: modelData.iconKind || "cloudy"
+                                primaryColor: modelData.iconColor || "#68c8ff"
+                                secondaryColor: "#f4fbff"
+                                anchors.horizontalCenter: parent.horizontalCenter
+                            }
+
+                            Text {
+                                text: modelData.high
+                                color: "#ffffff"
+                                font.pixelSize: 23
+                                font.bold: true
+                                anchors.horizontalCenter: parent.horizontalCenter
+                            }
+
+                            Text {
+                                text: modelData.low
+                                color: "#c9d5df"
+                                font.pixelSize: 19
+                                font.bold: true
+                                anchors.horizontalCenter: parent.horizontalCenter
                             }
                         }
                     }
                 }
             }
         }
+    }
 
-        RowLayout {
-            id: forecastRow
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
-            height: 126
+    Rectangle {
+        id: missedPrayerPopup
+        width: 220
+        height: missedPrayerContent.implicitHeight + 28
+        z: 6
+        visible: root.dashboardModel ? root.dashboardModel.missedPrayerOverlayVisible : false
+        x: contentArea.x + dateCard.x + dateCard.width - width - 12
+        y: contentArea.y + dateCard.y + dateCard.height + 10
+        radius: 18
+        color: "#dd141414"
+        border.width: 1
+        border.color: "#ffd34d"
+
+        Column {
+            id: missedPrayerContent
+            anchors.fill: parent
+            anchors.margins: 14
             spacing: 8
 
+            Text {
+                text: "MISSED PRAYERS"
+                color: "#fff1bf"
+                font.pixelSize: 18
+                font.bold: true
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+
             Repeater {
-                model: root.dashboardModel ? root.dashboardModel.forecastItems : []
-                delegate: Rectangle {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    radius: 24
-                    color: "transparent"
-                    border.width: 1
-                    border.color: "#9bc7b0"
+                model: root.dashboardModel ? root.dashboardModel.missedPrayerItems : []
+                delegate: Text {
+                    width: 180
+                    text: modelData
+                    color: "#ffffff"
+                    font.pixelSize: 16
+                    font.bold: true
+                    horizontalAlignment: Text.AlignHCenter
+                }
+            }
+        }
 
-                    Column {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 1
-
-                        Text {
-                            text: modelData.day
-                            color: "#ffffff"
-                            font.pixelSize: 30
-                            font.bold: true
-                            horizontalAlignment: Text.AlignHCenter
-                        }
-                        WeatherIcon {
-                            width: 34
-                            height: 26
-                            kind: modelData.iconKind || "cloudy"
-                            primaryColor: modelData.iconColor || "#68c8ff"
-                            secondaryColor: "#dff1ff"
-                            anchors.horizontalCenter: parent.horizontalCenter
-                        }
-                        Text {
-                            text: modelData.high
-                            color: "#ffb35c"
-                            font.pixelSize: 26
-                            font.bold: true
-                            horizontalAlignment: Text.AlignHCenter
-                        }
-                        Text {
-                            text: modelData.low
-                            color: "#73dcff"
-                            font.pixelSize: 26
-                            font.bold: true
-                            horizontalAlignment: Text.AlignHCenter
-                        }
-                    }
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {
+                if (root.dashboardModel) {
+                    root.dashboardModel.hideMissedPrayerOverlay()
                 }
             }
         }
@@ -636,7 +778,7 @@ Window {
 
     MouseArea {
         anchors.fill: parent
-        z: 2
+        z: 5
         visible: root.dashboardModel ? root.dashboardModel.missedPrayerOverlayVisible : false
         onClicked: {
             if (root.dashboardModel) {

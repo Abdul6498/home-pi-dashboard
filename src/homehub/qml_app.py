@@ -36,6 +36,15 @@ except ModuleNotFoundError as exc:  # pragma: no cover
 
 class DashboardController(QObject):
     dataChanged = Signal()
+    _SALAH_PROGRESS_STAGE_KEYS = (
+        "qiyam",
+        "ruku",
+        "itidal",
+        "sajda_1",
+        "jalsa",
+        "sajda_2",
+        "taslim",
+    )
 
     def __init__(self) -> None:
         super().__init__()
@@ -64,7 +73,7 @@ class DashboardController(QObject):
         self._weekday_text = "---"
         self._date_text = "--- --"
         self._year_text = "----"
-        self._app_fullscreen = self.settings.app.fullscreen
+        self._app_fullscreen = True
 
         self._weather_icon = "☁"
         self._weather_icon_color = "#68c8ff"
@@ -78,9 +87,17 @@ class DashboardController(QObject):
 
         self._next_salah_text = "--"
         self._time_left_text = "--H --M"
+        self._time_left_progress_value = 0.0
         self._current_salah_text = "--"
+        self._current_salah_time_text = "--:--"
+        self._hijri_date_text = ""
+        self._hijri_month_text = ""
+        self._hijri_year_text = ""
         self._current_prayer_breakdown_text = ""
         self._current_prayer_breakdown_items: list[dict] = []
+        self._daily_prayer_time_items: list[dict] = []
+        self._test_pose_index = self._resolve_test_pose_index()
+        self._test_rakat_index = self._resolve_test_rakat_index()
         self._prayer_alert_threshold_minutes = max(
             1, int(os.getenv("HH_PRAYER_ALERT_MINUTES", "10") or "10")
         )
@@ -184,12 +201,18 @@ class DashboardController(QObject):
             self._market_counter = 0
 
         prayer = self.prayer.get_status(now)
+        self._daily_prayer_time_items = self.prayer.daily_prayer_times(now)
         self._current_salah_text = self._display_salah_name(prayer.current_salah).upper()
+        self._current_salah_time_text = self.prayer.salah_time_text(prayer.current_salah, now).upper()
+        self._hijri_date_text = self.prayer.hijri_date_text(now)
+        self._hijri_month_text = self.prayer.hijri_month_text(now)
+        self._hijri_year_text = self.prayer.hijri_year_text(now)
         self._current_prayer_breakdown_text = self._lookup_prayer_breakdown(prayer.current_salah)
         self._current_prayer_breakdown_items = self._lookup_prayer_breakdown_items(prayer.current_salah)
         next_display = self._display_salah_name(prayer.next_salah)
         self._next_salah_text = f"{next_display} {prayer.next_time_text}".upper()
         self._time_left_text = f"{prayer.time_left_text} LEFT".upper()
+        self._time_left_progress_value = prayer.time_left_progress
         was_alert_active = self._prayer_alert_active
         current_is_isha = prayer.current_salah.strip().lower() == "isha"
         if current_is_isha and prayer.next_time_moment is not None:
@@ -428,6 +451,45 @@ class DashboardController(QObject):
             "fillColor": "#1cffffff",
         }
 
+    def _resolve_test_pose_index(self) -> int:
+        stage_name = os.getenv("HH_TEST_SALAH_PROGRESS_NAME", "").strip()
+        if stage_name:
+            normalized = self._normalize_progress_stage_name(stage_name)
+            if normalized in self._SALAH_PROGRESS_STAGE_KEYS:
+                return self._SALAH_PROGRESS_STAGE_KEYS.index(normalized)
+
+        return max(0, int(os.getenv("HH_TEST_SALAH_PROGRESS_INDEX", "3") or "3"))
+
+    def _resolve_test_rakat_index(self) -> int:
+        rakat_number = os.getenv("HH_TEST_RAKAT_NUMBER", "").strip()
+        if rakat_number:
+            try:
+                parsed = int(rakat_number)
+                if parsed > 0:
+                    return max(0, parsed - 1)
+            except ValueError:
+                pass
+
+        return max(0, int(os.getenv("HH_TEST_RAKAT_INDEX", "1") or "1"))
+
+    def _normalize_progress_stage_name(self, stage_name: str) -> str:
+        normalized = stage_name.strip().lower()
+        normalized = normalized.replace("'", "")
+        normalized = normalized.replace("-", "")
+        normalized = normalized.replace(" ", "")
+        aliases = {
+            "qiyam": "qiyam",
+            "ruku": "ruku",
+            "ruku": "ruku",
+            "itidal": "itidal",
+            "sajda": "sajda_1",
+            "sajda1": "sajda_1",
+            "jalsa": "jalsa",
+            "sajda2": "sajda_2",
+            "taslim": "taslim",
+        }
+        return aliases.get(normalized, normalized)
+
     def _mark_prayer_missed_if_unacknowledged(
         self,
         marker: str,
@@ -560,9 +622,29 @@ class DashboardController(QObject):
     def timeLeftText(self) -> str:
         return self._time_left_text
 
+    @Property(float, notify=dataChanged)
+    def timeLeftProgressValue(self) -> float:
+        return float(max(0.0, min(1.0, self._time_left_progress_value)))
+
     @Property(str, notify=dataChanged)
     def currentSalahText(self) -> str:
         return self._current_salah_text
+
+    @Property(str, notify=dataChanged)
+    def currentSalahTimeText(self) -> str:
+        return self._current_salah_time_text
+
+    @Property(str, notify=dataChanged)
+    def hijriDateText(self) -> str:
+        return self._hijri_date_text
+
+    @Property(str, notify=dataChanged)
+    def hijriMonthText(self) -> str:
+        return self._hijri_month_text
+
+    @Property(str, notify=dataChanged)
+    def hijriYearText(self) -> str:
+        return self._hijri_year_text
 
     @Property(str, notify=dataChanged)
     def currentPrayerBreakdownText(self) -> str:
@@ -571,6 +653,18 @@ class DashboardController(QObject):
     @Property("QVariantList", notify=dataChanged)
     def currentPrayerBreakdownItems(self) -> list[dict]:
         return self._current_prayer_breakdown_items
+
+    @Property("QVariantList", notify=dataChanged)
+    def dailyPrayerTimeItems(self) -> list[dict]:
+        return self._daily_prayer_time_items
+
+    @Property(int, notify=dataChanged)
+    def testSalahProgressIndex(self) -> int:
+        return self._test_pose_index
+
+    @Property(int, notify=dataChanged)
+    def testRakatIndex(self) -> int:
+        return self._test_rakat_index
 
     @Property(bool, notify=dataChanged)
     def prayerAlertActive(self) -> bool:
@@ -672,15 +766,35 @@ def run() -> int:
         return 1
     window = engine.rootObjects()[0]
     window.setFlags(window.flags() | Qt.FramelessWindowHint)
-    if settings.app.fullscreen:
-        window.setX(0)
-        window.setY(0)
-        window.showFullScreen()
-    else:
-        window.show()
+    _apply_test_screen(window, app)
+    window.showFullScreen()
     return app.exec()
 
 
+def _apply_test_screen(window, app: QGuiApplication) -> None:
+    raw_screen = os.getenv("HH_TEST_SCREEN", "").strip()
+    if not raw_screen:
+        return
+
+    try:
+        requested = int(raw_screen)
+    except ValueError:
+        return
+
+    screens = app.screens()
+    if not screens:
+        return
+
+    # Human-friendly: 1 means first screen, 4 means fourth screen.
+    screen_index = requested - 1 if requested > 0 else 0
+    if screen_index < 0 or screen_index >= len(screens):
+        return
+
+    screen = screens[screen_index]
+    window.setScreen(screen)
+    geometry = screen.geometry()
+    window.setX(geometry.x())
+    window.setY(geometry.y())
 def _configure_qt_backend(settings) -> None:
     # Use conservative defaults for Pi-class hardware while forcing software mode on WSL.
     is_wsl = "microsoft" in platform.release().lower()

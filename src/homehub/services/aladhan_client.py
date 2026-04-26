@@ -62,6 +62,8 @@ class PrayerSchedule:
     readable_date: str
     gregorian_date: str
     hijri_date: str
+    hijri_month_name: str
+    hijri_year: str
     timings: Mapping[str, datetime]
     meta: PrayerMeta
 
@@ -171,6 +173,8 @@ class AladhanAPIClient:
         gregorian_date = date_block["gregorian"]["date"]  # type: ignore[index]
         readable_date = date_block["readable"]  # type: ignore[index]
         hijri_date = date_block["hijri"]["date"]  # type: ignore[index]
+        hijri_month_name = date_block["hijri"]["month"]["en"]  # type: ignore[index]
+        hijri_year = date_block["hijri"]["year"]  # type: ignore[index]
         day = datetime.strptime(gregorian_date, "%d-%m-%Y").date()
 
         timezone_name = str(meta_block.get("timezone", "UTC"))
@@ -213,6 +217,8 @@ class AladhanAPIClient:
             readable_date=readable_date,
             gregorian_date=gregorian_date,
             hijri_date=hijri_date,
+            hijri_month_name=hijri_month_name,
+            hijri_year=hijri_year,
             timings=ordered_timings,
             meta=meta,
         )

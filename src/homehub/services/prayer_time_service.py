@@ -15,6 +15,7 @@ class PrayerStatus:
     next_time_moment: datetime | None
     time_left_text: str
     time_left_minutes: int
+    time_left_progress: float
 
 
 class PrayerTimeService:
@@ -54,6 +55,7 @@ class PrayerTimeService:
                 next_time_moment=None,
                 time_left_text="--h --m",
                 time_left_minutes=-1,
+                time_left_progress=0.0,
             )
 
         self._ensure_schedules(current_time)
@@ -65,6 +67,7 @@ class PrayerTimeService:
                 next_time_moment=None,
                 time_left_text="--h --m",
                 time_left_minutes=-1,
+                time_left_progress=0.0,
             )
 
         timings = self._schedule_today.timings
@@ -86,6 +89,10 @@ class PrayerTimeService:
             if next_name is None or next_moment is None:
                 next_name = current_name
                 next_moment = current_start
+            progress = self._progress_fraction(
+                remaining=delta,
+                total=(current_end - current_start),
+            )
             return PrayerStatus(
                 current_salah=current_name,
                 next_salah=next_name,
@@ -93,6 +100,7 @@ class PrayerTimeService:
                 next_time_moment=next_moment,
                 time_left_text=self._format_duration(delta),
                 time_left_minutes=self._duration_minutes(delta),
+                time_left_progress=progress,
             )
 
         next_name, next_moment = self._next_salah(tz_now)
@@ -105,6 +113,7 @@ class PrayerTimeService:
                 next_time_moment=None,
                 time_left_text="--h --m",
                 time_left_minutes=-1,
+                time_left_progress=0.0,
             )
 
         next_moment = self._resolve_future_next_moment(
@@ -116,6 +125,21 @@ class PrayerTimeService:
         delta = next_moment - tz_now
         if delta.total_seconds() < 0:
             delta = timedelta(seconds=0)
+        current_start, current_end = self._interval_bounds_for_current_salah(
+            current_salah=current_salah,
+            reference=tz_now,
+            next_name=next_name,
+            next_moment=next_moment,
+        )
+        total_interval = (
+            (current_end - current_start)
+            if current_start is not None and current_end is not None and current_end > current_start
+            else delta
+        )
+        progress = self._progress_fraction(
+            remaining=delta,
+            total=total_interval,
+        )
 
         return PrayerStatus(
             current_salah=current_salah,
@@ -124,7 +148,93 @@ class PrayerTimeService:
             next_time_moment=next_moment,
             time_left_text=self._format_duration(delta),
             time_left_minutes=self._duration_minutes(delta),
+            time_left_progress=progress,
         )
+
+    def daily_prayer_times(self, now: datetime | None = None) -> list[dict[str, str]]:
+        current_time = now or datetime.now()
+        if self._client is None:
+            return []
+
+        self._ensure_schedules(current_time)
+        if self._schedule_today is None:
+            return []
+
+        items: list[dict[str, str]] = []
+        for key in self._DISPLAY_KEYS:
+            moment = self._schedule_today.timings.get(key)
+            if moment is None:
+                continue
+            items.append(
+                {
+                    "name": key.upper(),
+                    "time": moment.strftime("%I:%M").lstrip("0") or moment.strftime("%I:%M"),
+                }
+            )
+        return items
+
+    def hijri_date_text(self, now: datetime | None = None) -> str:
+        current_time = now or datetime.now()
+        if self._client is None:
+            return ""
+
+        self._ensure_schedules(current_time)
+        if self._schedule_today is None:
+            return ""
+
+        return self._schedule_today.hijri_date
+
+    def hijri_month_text(self, now: datetime | None = None) -> str:
+        current_time = now or datetime.now()
+        if self._client is None:
+            return ""
+
+        self._ensure_schedules(current_time)
+        if self._schedule_today is None:
+            return ""
+
+        return str(self._schedule_today.hijri_month_name).upper()
+
+    def hijri_year_text(self, now: datetime | None = None) -> str:
+        current_time = now or datetime.now()
+        if self._client is None:
+            return ""
+
+        self._ensure_schedules(current_time)
+        if self._schedule_today is None:
+            return ""
+
+        return f"{self._schedule_today.hijri_year} AH"
+
+    def salah_time_text(self, salah_name: str, now: datetime | None = None) -> str:
+        current_time = now or datetime.now()
+        if self._client is None:
+            return "--:--"
+
+        self._ensure_schedules(current_time)
+        if self._schedule_today is None:
+            return "--:--"
+
+        normalized = salah_name.strip().lower()
+        if normalized == "before fajr":
+            normalized = "isha"
+
+        lookup = {
+            "imsak": "Imsak",
+            "fajr": "Fajr",
+            "dhuhr": "Dhuhr",
+            "asr": "Asr",
+            "maghrib": "Maghrib",
+            "isha": "Isha",
+        }
+        key = lookup.get(normalized)
+        if key is None:
+            return "--:--"
+
+        moment = self._schedule_today.timings.get(key)
+        if moment is None:
+            return "--:--"
+        return moment.strftime("%I:%M %p").lstrip("0") or moment.strftime("%I:%M %p")
 
     def due_salah_for_adhan(
         self, now: datetime | None = None, *, grace_seconds: int = 120
@@ -317,6 +427,45 @@ class PrayerTimeService:
             return ("Fajr", moment) if moment is not None else self._next_salah(reference)
         return self._next_salah(reference)
 
+    def _interval_bounds_for_current_salah(
+        self,
+        *,
+        current_salah: str,
+        reference: datetime,
+        next_name: str,
+        next_moment: datetime | None,
+    ) -> tuple[datetime | None, datetime | None]:
+        current_window = self._current_window(reference)
+        if current_window is not None:
+            _, start, end = current_window
+            return start, end
+
+        today = self._schedule_today.timings if self._schedule_today else {}
+        yesterday = self._schedule_yesterday.timings if self._schedule_yesterday else {}
+
+        key = current_salah.strip().lower()
+        end = next_moment
+        if key == "isha":
+            start = today.get("Isha")
+            if start is None or start > reference:
+                start = yesterday.get("Isha") or self._project_previous_day_time(today.get("Isha"))
+            if start is not None and start > reference:
+                start = self._project_previous_day_time(start)
+            if end is not None and start is not None and end <= start:
+                end = self._normalize_future_moment(end, start)
+            return start, end
+        if key == "imsak":
+            return today.get("Imsak"), today.get("Fajr")
+        if key == "fajr":
+            return today.get("Fajr"), today.get("Sunrise")
+        if key == "dhuhr":
+            return today.get("Dhuhr"), today.get("Asr")
+        if key == "asr":
+            return today.get("Asr"), today.get("Maghrib")
+        if key == "maghrib":
+            return today.get("Maghrib"), today.get("Isha")
+        return None, end
+
     def _adhan_trigger_moment(self, salah_name: str) -> datetime | None:
         today = self._schedule_today.timings if self._schedule_today else {}
         if salah_name == "Fajr":
@@ -419,3 +568,10 @@ class PrayerTimeService:
 
     def _duration_minutes(self, delta: timedelta) -> int:
         return max(0, int(delta.total_seconds() // 60))
+
+    def _progress_fraction(self, *, remaining: timedelta, total: timedelta) -> float:
+        total_seconds = max(total.total_seconds(), 0.0)
+        if total_seconds <= 0:
+            return 0.0
+        remaining_seconds = min(max(remaining.total_seconds(), 0.0), total_seconds)
+        return remaining_seconds / total_seconds
