@@ -1,8 +1,8 @@
 # Home Pi Dashboard
 
-A modular Raspberry Pi 3 home dashboard designed for a 7-inch HDMI display.
+Prayer-first smart home dashboard for Raspberry Pi, built with `Python + PySide6/QML`, with live Salah progress integration from a Jetson Nano over UDP.
 
-## Architecture overview
+## Architecture Overview
 
 ![Home Pi Dashboard architecture](docs/images/home-pi-dashboard-architecture.png)
 
@@ -10,83 +10,163 @@ A modular Raspberry Pi 3 home dashboard designed for a 7-inch HDMI display.
 
 ![Home Pi Dashboard UI](docs/images/app_home_pi.png)
 
-## Vision
+## What the app does
 
-Start with a full-screen clock and weather panel, then grow into a smart home wall dashboard with modular features.
+The dashboard is designed for a `1024x600` touch display and focuses on:
 
-Planned feature modules:
-- clock (phase 1)
-- weather (phase 1)
-- GPS/location-aware updates (phase 1)
-- calendar (phase 2)
-- home automation widgets (phase 2)
-- prayer/azan and reminders (phase 2)
-- local media/news cards (phase 3)
+- large fullscreen digital clock
+- Gregorian date
+- Hijri date with month and year
+- current weather and `6`-day forecast
+- current prayer and next prayer time
+- prayer countdown bar
+- adhan playback
+- prayer reminder buzzer
+- missed prayer notification bell and popup
+- live Salah progress and rakat tracking from UDP packets
 
-## Stack direction
+## Core features
 
-- Language: Python 3.11+
-- GUI strategy: Qt/QML (PySide6) for a clean 1024x600 production layout
-- Data services: modular service classes (weather, GPS, time)
-- Config: TOML settings + `.env` secrets
-- Tests: pytest
+### Prayer features
 
-The default profile is tuned for Raspberry Pi 3:
-- basic Qt render loop
-- display-sized wallpaper derivatives instead of full-resolution originals
-- optional cached daily wallpaper downloads with local fallback
+- current prayer detection
+- next prayer name and time
+- time-left countdown for the active prayer window
+- per-prayer progress bar that changes color as time runs out
+- custom reminder rules:
+  - `Fajr`: `10` minutes before end of Fajr window
+  - `Dhuhr`: `10` minutes before `Asr`
+  - `Asr`: `10` minutes before `Maghrib`
+  - `Maghrib`: `10` minutes before `Isha`
+  - `Isha`: `30` minutes after Isha time, for `5` minutes
+- tap reminder area to stop the active reminder
+- missed prayer bell appears only when a real reminder was not acknowledged
 
-## Settings-first foundation
+### Salah progress features
 
-The app now supports profile-style settings from `config/settings.toml` (see `config/settings.example.toml`).
+- receives UDP data from another app running on Jetson Nano
+- reads:
+  - `fsm_state`
+  - `current_rakat`
+  - `prayer_name`
+- maps live FSM states into dashboard stages:
+  - `QIYAM`
+  - `RUKU`
+  - `QAUMA`
+  - `SUJUD_1`
+  - `JALSA`
+  - `SUJUD_2`
+  - `TASHAHHUD` / `TASLIM`
+- shows live posture progress
+- shows current rakat
+- tracks skipped/missed states
+- marks missed states in red
+- preserves per-rakat progress history
+- lets you tap a rakat circle to inspect that rakat’s stored progress
 
-Config includes:
-- app window/fullscreen sizing
-- theme + font family
-- background controls
-- module toggles (`clock`, `weather`, `gps`)
-- refresh intervals per module
-- fallback coordinates (defaulted to Hessigheim, Germany)
-- performance profile (`rpi3`) and wallpaper/rendering options
+### Weather and date features
 
-Background config now lives in `config/settings.toml` under `[background]`:
-- `enabled = true` to show a background image
-- `use_daily_image = true` to prefer the daily downloaded wallpaper
-- `default_image = "spring.jpg"` to choose the bundled fallback image
+- current weather from Open-Meteo
+- temperature
+- humidity
+- weather condition icon
+- `6`-day forecast
+- Hijri date pulled through the prayer-time API flow
 
-If daily image mode is off or the download is unavailable, the dashboard falls back to the configured `default_image`.
+### UI features
 
-Secrets stay in `.env` (for example `WEATHER_API_KEY`).
+- fullscreen QML interface
+- touch-friendly layout
+- black background with transparent bordered cards
+- optimized for Raspberry Pi class hardware
+
+## High-level architecture
+
+### Jetson Nano side
+
+The external vision application sends UDP packets over the local network.  
+Those packets contain posture and rakat state such as:
+
+- `fsm_state`
+- `current_rakat`
+- `prayer_name`
+
+### Raspberry Pi side
+
+The dashboard listens for those packets and combines them with:
+
+- prayer timing logic
+- weather data
+- adhan/reminder audio
+- UI state
+
+### Main internal layers
+
+#### 1. Service layer
+
+- `weather_service.py`
+  - fetches current weather and forecast from Open-Meteo
+- `prayer_time_service.py`
+  - computes current prayer, next prayer, Hijri data, and countdowns
+- `adhan_audio_service.py`
+  - handles adhan and reminder playback with Linux-friendly backends
+- `udp_overlay_service.py`
+  - listens for UDP packets and parses live Salah state
+
+#### 2. Controller layer
+
+- `qml_app.py`
+  - central state manager for the dashboard
+  - merges clock, prayer, weather, reminder, notification, and UDP data
+  - exposes properties to QML
+
+#### 3. UI layer
+
+- `src/homehub/qml/Main.qml`
+  - renders the fullscreen dashboard
+  - drives layout, colors, animations, touch behavior
 
 ## Project structure
 
 ```text
 home-pi-dashboard/
   config/
+    prayers.json
     settings.example.toml
   docs/
-    ARCHITECTURE.md
-    ROADMAP.md
+    images/
+  scripts/
+    install_pi_app.sh
+    install_systemd_user_services.sh
+    run_dashboard.sh
+    run_on_pi3.sh
+    update_and_restart_on_pi.sh
   src/homehub/
-    main.py
-    qml_app.py
+    assets/
     config.py
-    modules/
-      clock.py
-      weather.py
-      gps.py
-    services/
-      weather_service.py
-      gps_service.py
-    ui/
-      seasonal.py
+    main.py
     qml/
       Main.qml
+    qml_app.py
+    modules/
+    services/
+      adhan_audio_service.py
+      prayer_time_service.py
+      udp_overlay_service.py
+      weather_service.py
+    ui/
   tests/
-    test_config.py
 ```
 
-## Quick start (local dev)
+## Requirements
+
+- Python `3.11+`
+- Linux desktop session for GUI
+- `PySide6`
+- `pygame`
+- Raspberry Pi OS 64-bit is the main deployment target
+
+## Local development
 
 ```bash
 python3 -m venv .venv
@@ -97,105 +177,146 @@ cp config/settings.example.toml config/settings.toml
 python -m homehub.main
 ```
 
-## Raspberry Pi 3 One-Step Run
+Installed command:
 
-Before first launch on Raspberry Pi OS, install the Qt/X11 runtime packages needed by PySide6:
+```bash
+home-pi-dashboard
+```
+
+## Configuration
+
+### `config/settings.toml`
+
+Main runtime config lives here.
+
+Important sections:
+
+- `[app]`
+  - fullscreen and base resolution
+- `[background]`
+  - black mode or image mode
+- `[location]`
+  - fallback coordinates
+- `[modules]`
+  - enable/disable major sections
+- `[refresh]`
+  - update intervals
+- `[performance]`
+  - Pi tuning
+- `[udp_overlay]`
+  - UDP receiver settings
+
+### `.env`
+
+Current useful `.env` knobs:
+
+```env
+# Optional alternate config path
+# HH_CONFIG=config/settings.toml
+
+# Temporary adhan test
+# HH_TEST_ADHAN_AFTER_SECONDS=15
+# HH_TEST_ADHAN_SALAH=Fajr
+
+# Multi-monitor testing on laptop
+# HH_TEST_SCREEN=4
+
+# Manual Salah progress fallback values when no UDP is active
+# HH_TEST_SALAH_PROGRESS_NAME=Jalsa
+# HH_TEST_RAKAT_NUMBER=2
+
+# Optional live UDP overlay
+# HH_UDP_OVERLAY_ENABLED=true
+# HH_UDP_OVERLAY_HOST=0.0.0.0
+# HH_UDP_OVERLAY_PORT=5005
+```
+
+## UDP live Salah integration
+
+Enable UDP mode in `.env`:
+
+```env
+HH_UDP_OVERLAY_ENABLED=true
+HH_UDP_OVERLAY_HOST=0.0.0.0
+HH_UDP_OVERLAY_PORT=5005
+```
+
+Expected payload shape contains data like:
+
+```json
+{
+  "event": "overlay_frame",
+  "prayer_name": "Fajr / Sunnah / Nafl",
+  "current_rakat": 1,
+  "fsm_state": "QIYAM"
+}
+```
+
+Notes:
+
+- the dashboard extracts JSON even if the UDP packet has binary bytes before the payload
+- if UDP stops, the dashboard keeps the last live state briefly
+- after timeout, it falls back to non-live dashboard behavior
+
+## Raspberry Pi setup
+
+Before first launch on Raspberry Pi OS, install the Qt/X11 runtime packages used by PySide6:
 
 ```bash
 sudo apt update
 sudo apt install -y libxcb-cursor0 libxkbcommon-x11-0
 ```
 
-If you see an error like:
+If you see:
 
 ```text
 qt.qpa.plugin: From 6.5.0, xcb-cursor0 or libxcb-cursor0 is needed to load the Qt xcb platform plugin
 qt.qpa.plugin: Could not load the Qt platform plugin "xcb"
 ```
 
-it means those packages are missing.
+those packages are missing.
 
-On a Raspberry Pi 3 with Raspberry Pi OS 64-bit, you can launch the app with one script:
+## Run on Raspberry Pi
 
 ```bash
 cd /path/to/home-pi-dashboard
 ./scripts/run_on_pi3.sh
 ```
 
-What this script does:
-- creates `.venv` if missing
-- installs/updates the dashboard package
-- copies `.env.example` to `.env` if needed
-- copies `config/settings.example.toml` to `config/settings.toml` if needed
+What it does:
+
+- creates `.venv` if needed
+- installs or updates the package
+- copies `.env.example` if `.env` is missing
+- copies `config/settings.example.toml` if `config/settings.toml` is missing
 - launches the dashboard
 
-After installation, the Python package also exposes a direct command:
-
-```bash
-source .venv/bin/activate
-home-pi-dashboard
-```
-
-## Raspberry Pi Auto-Update And Restart
-
-If you want the Pi to check `main`, pull updates, stop the running dashboard, and start it again, use:
+## Auto-update and restart on Pi
 
 ```bash
 cd /path/to/home-pi-dashboard
 ./scripts/update_and_restart_on_pi.sh
 ```
 
-What this script does:
+Behavior:
+
 - fetches `origin/main`
-- compares your local `HEAD` to the remote branch
-- if nothing changed and the dashboard is already running, it exits quietly
-- if nothing changed and the dashboard is not running, it starts the dashboard
-- pulls with `--ff-only` if there is a new commit
-- stops the running dashboard process
-- restarts it through `./scripts/run_on_pi3.sh`
+- fast-forwards local branch if needed
+- restarts the dashboard if new code arrived
+- starts the app if it is not already running
 
-Important:
-- it refuses to auto-pull if you have local tracked changes
-- it ignores untracked files, so generated caches do not block updates
-- if `DISPLAY` is not set, it defaults to `:0`, which matches most Raspberry Pi desktop sessions
-
-If you want the Pi to check periodically, add a cron entry like this:
-
-```bash
-crontab -e
-```
-
-Then add:
-
-```cron
-*/10 * * * * cd /path/to/home-pi-dashboard && ./scripts/update_and_restart_on_pi.sh >> /path/to/home-pi-dashboard/.runtime/update.log 2>&1
-```
-
-That example checks every 10 minutes.
-
-## Raspberry Pi systemd Auto-Run And Auto-Update
-
-If you want this to run automatically in the background on the Pi, install the user-level `systemd` units:
+## systemd user services on Pi
 
 ```bash
 cd /path/to/home-pi-dashboard
 ./scripts/install_systemd_user_services.sh
 ```
 
-What this sets up:
-- `home-pi-dashboard.service`
-  - keeps the dashboard running
-  - restarts it automatically if it exits
-- `home-pi-dashboard-update.service`
-  - runs the updater script once
-- `home-pi-dashboard-update.timer`
-  - checks for updates every 10 minutes
+This installs:
 
-Behavior:
-- the dashboard starts automatically through `systemd`
-- every 10 minutes the timer runs the updater
-- if `main` changed, the app is pulled and restarted
-- if the app is stopped for any reason, the service brings it back
+- `home-pi-dashboard.service`
+- `home-pi-dashboard-update.service`
+- `home-pi-dashboard-update.timer`
 
 Useful commands:
 
@@ -206,39 +327,7 @@ systemctl --user status home-pi-dashboard-update.timer
 journalctl --user -u home-pi-dashboard.service -f
 ```
 
-Notes:
-- this is a user-level `systemd` setup, so it works best on a Pi desktop session with your normal user
-- it sets `DISPLAY=:0` and `XAUTHORITY=$HOME/.Xauthority` for the GUI service
-- the updater script is `systemd`-aware now, so it restarts the managed service cleanly instead of fighting it with manual background processes
-
-## Temporary Adhan Test
-
-If you want to test adhan playback without waiting for the real prayer time, add these lines to `.env`:
-
-```bash
-HH_TEST_ADHAN_AFTER_SECONDS=15
-HH_TEST_ADHAN_SALAH=Fajr
-```
-
-That will:
-- wait 15 seconds after app startup
-- play the Fajr adhan
-- show the post-adhan image for 1 minute after playback finishes
-
-Important:
-- this is test-only behavior
-- remove or comment these lines again after testing so the dashboard returns to normal prayer-time triggering
-- the same keys are included as commented examples in `.env.example`
-
-Important:
-- PySide6 works best on Raspberry Pi OS 64-bit
-- on 32-bit Pi OS, dependency installation may fail
-- if you want kiosk autostart later, we can wire this same launcher into `systemd`
-- the Pi launcher now runs the app frameless, and fullscreen is enabled by default in `config/settings.example.toml`
-
-## Raspberry Pi App Install
-
-If you want a simple app-style command and desktop entry on the Pi:
+## App-style install on Pi
 
 ```bash
 cd /path/to/home-pi-dashboard
@@ -246,33 +335,57 @@ cd /path/to/home-pi-dashboard
 ```
 
 This creates:
+
 - `~/.local/bin/home-pi-dashboard`
 - `~/.local/share/applications/home-pi-dashboard.desktop`
 
-The salah/prayer-time code is now bundled inside this repository, so the Pi app no longer depends on the separate `azaan_clock` project.
+## Audio notes
 
-Weather data is fetched live from Open-Meteo and rendered with condition-aware icon styling.
-Default style now uses the `crystal` theme and automatic seasonal visuals (spring/summer/autumn/winter).
-Real seasonal image assets are stored in `assets/seasonal/` with attribution in `assets/seasonal/ATTRIBUTION.md`.
-The app can also fetch one daily seasonal wallpaper from Wikimedia Commons into `assets/seasonal/daily/` (with per-image attribution JSON), then fall back to bundled assets when offline.
+Adhan and reminder playback use multiple Linux-friendly backends.  
+The app can use available tools such as:
 
-## WSL GUI Run Notes
+- `ffplay`
+- `cvlc`
+- `pygame`
 
-Use the launcher from a normal WSL shell (do not use `sudo`):
+This helps keep playback working across WSL, Ubuntu desktops, and Raspberry Pi environments.
 
-```bash
-cd /home/user/Workspace/home-pi-dashboard
-./scripts/run_dashboard.sh
+## Troubleshooting
+
+### App opens on the wrong monitor
+
+Use:
+
+```env
+HH_TEST_SCREEN=4
 ```
 
-If you see `libEGL`/`MESA`/`Vulkan` warnings in WSL, the app now defaults Qt to software rendering (`QT_QUICK_BACKEND=software` and `QSG_RHI_BACKEND=software`) to keep GUI rendering stable.
+This is mainly for laptop multi-display testing before deploying to Pi.
 
-If this is your first run:
+### UDP is enabled but nothing moves
 
-```bash
-cd /home/user/Workspace/home-pi-dashboard
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .[dev]
-./scripts/run_dashboard.sh
+Check:
+
+- sender is using the same port
+- packets are reaching the Pi/laptop
+- `fsm_state` values match supported states
+
+### Reminder / adhan test
+
+Use:
+
+```env
+HH_TEST_ADHAN_AFTER_SECONDS=15
+HH_TEST_ADHAN_SALAH=Fajr
 ```
+
+Then restart the app.
+
+## Roadmap direction
+
+Planned next growth areas:
+
+- stronger Jetson Nano / SalahSense integration
+- richer fallback and review modes
+- home widgets and modular cards
+- more production polish for kiosk deployments
