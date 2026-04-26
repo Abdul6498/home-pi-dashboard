@@ -494,7 +494,7 @@ class DashboardController(QObject):
             if normalized in self._SALAH_PROGRESS_STAGE_KEYS:
                 return self._SALAH_PROGRESS_STAGE_KEYS.index(normalized)
 
-        return max(0, int(os.getenv("HH_TEST_SALAH_PROGRESS_INDEX", "3") or "3"))
+        return max(0, int(os.getenv("HH_TEST_SALAH_PROGRESS_INDEX", "0") or "0"))
 
     def _resolve_test_rakat_index(self) -> int:
         rakat_number = os.getenv("HH_TEST_RAKAT_NUMBER", "").strip()
@@ -506,7 +506,7 @@ class DashboardController(QObject):
             except ValueError:
                 pass
 
-        return max(0, int(os.getenv("HH_TEST_RAKAT_INDEX", "1") or "1"))
+        return max(0, int(os.getenv("HH_TEST_RAKAT_INDEX", "0") or "0"))
 
     def _pose_index_from_stage_key(self, stage_key: str) -> int | None:
         normalized = self._normalize_progress_stage_name(stage_key)
@@ -535,13 +535,21 @@ class DashboardController(QObject):
             self._live_rakat_index = next_rakat_index
             return
 
+        if (
+            self._live_rakat_index is not None
+            and next_rakat_index > self._live_rakat_index
+        ):
+            self._finalize_previous_rakat(self._live_rakat_index)
+
         rakat_state = self._rakat_progress_history.setdefault(
             next_rakat_index,
             {"pose_index": None, "missed_indices": []},
         )
         previous_pose_index = rakat_state["pose_index"]
         missed_indices = list(rakat_state["missed_indices"])
-        if previous_pose_index is None or next_pose_index <= previous_pose_index:
+        if previous_pose_index is None:
+            missed_indices = []
+        elif next_pose_index < previous_pose_index:
             missed_indices = []
         elif next_pose_index > previous_pose_index + 1:
             skipped = range(previous_pose_index + 1, next_pose_index)
@@ -552,6 +560,22 @@ class DashboardController(QObject):
         self._live_rakat_index = next_rakat_index
         self._live_pose_index = next_pose_index
         self._missed_progress_indices = missed_indices
+
+    def _finalize_previous_rakat(self, rakat_index: int) -> None:
+        rakat_state = self._rakat_progress_history.setdefault(
+            rakat_index,
+            {"pose_index": None, "missed_indices": []},
+        )
+        previous_pose_index = rakat_state.get("pose_index")
+        if not isinstance(previous_pose_index, int):
+            return
+
+        missed_indices = list(rakat_state.get("missed_indices", []))
+        final_required_index = self._SALAH_PROGRESS_STAGE_KEYS.index("sajda_2")
+        if previous_pose_index < final_required_index:
+            trailing_missing = range(previous_pose_index + 1, final_required_index + 1)
+            missed_indices = sorted(set(missed_indices).union(trailing_missing))
+            rakat_state["missed_indices"] = missed_indices
 
     def _normalize_overlay_prayer_key(self, prayer_name: str) -> str:
         primary = prayer_name.split("/", 1)[0].strip().lower()
