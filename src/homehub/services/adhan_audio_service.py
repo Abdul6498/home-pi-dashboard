@@ -46,9 +46,9 @@ class AdhanAudioService:
             return False
         self.stop_prayer_reminder()
         track = self._fajr_track if salah_name.lower() == "fajr" else self._regular_track
-        if self._play_with_pygame(track):
+        if self._play_with_external_backend(track):
             return True
-        return self._play_with_external_backend(track)
+        return self._play_with_pygame(track)
 
     def stop(self) -> None:
         self.stop_prayer_reminder()
@@ -91,7 +91,7 @@ class AdhanAudioService:
         if not self._reminder_track.exists():
             return False
 
-        if self._start_external_reminder_once():
+        if self._start_external_reminder_loop():
             return True
 
         if pygame is not None:
@@ -109,11 +109,10 @@ class AdhanAudioService:
                 pass
         return False
 
-    def _start_external_reminder_once(self) -> bool:
+    def _start_external_reminder_loop(self) -> bool:
         commands = [
-            ["ffplay", "-nodisp", "-autoexit", "-loglevel", "quiet", str(self._reminder_track.path)],
-            ["mpg123", "-q", str(self._reminder_track.path)],
-            ["cvlc", "--play-and-exit", "--quiet", str(self._reminder_track.path)],
+            ["ffplay", "-nodisp", "-loglevel", "quiet", "-loop", "0", str(self._reminder_track.path)],
+            ["cvlc", "--loop", "--quiet", str(self._reminder_track.path)],
         ]
         for command in commands:
             if shutil.which(command[0]) is None:
@@ -169,6 +168,9 @@ class AdhanAudioService:
         commands = [
             ["ffplay", "-nodisp", "-autoexit", "-loglevel", "quiet", str(track.path)],
             ["mpg123", "-q", str(track.path)],
+            ["mpg321", "-q", str(track.path)],
+            ["gst-play-1.0", "--quiet", str(track.path)],
+            ["play", "-q", str(track.path)],
             ["cvlc", "--play-and-exit", "--quiet", str(track.path)],
         ]
         for command in commands:

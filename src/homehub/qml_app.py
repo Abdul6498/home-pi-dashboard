@@ -157,6 +157,12 @@ class DashboardController(QObject):
             self._missed_prayer_items = []
             self._missed_prayer_count = 0
             self._missed_prayer_overlay_visible = False
+            self._prayer_alert_marker = ""
+            self._dismissed_prayer_alert_marker = ""
+            self._auto_closed_prayer_alert_marker = ""
+            self._last_adhan_marker = ""
+            self._active_adhan_marker = ""
+            self.adhan_audio.stop_prayer_reminder()
 
         interval = max(1, self.settings.refresh.clock_seconds)
         self._weather_counter += interval
@@ -512,9 +518,9 @@ class DashboardController(QObject):
             if prayer_name_override
             else self._missed_prayer_name_from_marker(marker)
         )
-        if prayer_name:
+        if prayer_name and prayer_name not in self._missed_prayer_items:
             self._missed_prayer_items.append(prayer_name)
-        self._missed_prayer_count += 1
+        self._missed_prayer_count = len(self._missed_prayer_items)
 
     def _is_trackable_prayer_name(self, prayer_name: str) -> bool:
         key = prayer_name.strip().lower()
