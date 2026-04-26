@@ -258,18 +258,10 @@ class DashboardController(QObject):
             marker_moment = (
                 prayer.next_time_moment.isoformat() if prayer.next_time_moment else prayer.next_time_text
             )
-            marker = f"{prayer.next_salah}|{marker_moment}"
+            marker = f"{prayer.current_salah}|{marker_moment}"
         if marker != self._prayer_alert_marker:
-            missed_name_override = (
-                prayer.current_salah
-                if self._is_trackable_prayer_name(prayer.current_salah)
-                else None
-            )
             if was_alert_active:
-                self._mark_prayer_missed_if_unacknowledged(
-                    self._prayer_alert_marker,
-                    prayer_name_override=missed_name_override,
-                )
+                self._mark_prayer_missed_if_unacknowledged(self._prayer_alert_marker)
             self._prayer_alert_marker = marker
             self._prayer_alert_active = False
         generic_reminder_prayer = prayer.current_salah.strip().lower()
