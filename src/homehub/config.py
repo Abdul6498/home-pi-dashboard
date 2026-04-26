@@ -70,6 +70,13 @@ class PerformanceSettings:
 
 
 @dataclass(frozen=True)
+class UdpOverlaySettings:
+    enabled: bool
+    bind_host: str
+    port: int
+
+
+@dataclass(frozen=True)
 class Settings:
     app: AppSettings
     theme: ThemeSettings
@@ -78,6 +85,7 @@ class Settings:
     modules: ModuleSettings
     refresh: RefreshSettings
     performance: PerformanceSettings
+    udp_overlay: UdpOverlaySettings
     weather_api_key: str
 
 
@@ -109,6 +117,7 @@ def load_settings(config_path: Path | None = None) -> Settings:
     modules = _section(data, "modules")
     refresh = _section(data, "refresh")
     performance = _section(data, "performance")
+    udp_overlay = _section(data, "udp_overlay")
 
     weather_api_key = os.getenv("WEATHER_API_KEY", "").strip()
 
@@ -158,6 +167,33 @@ def load_settings(config_path: Path | None = None) -> Settings:
             use_daily_wallpapers=bool(_value(performance, "use_daily_wallpapers", True)),
             wallpaper_width=max(320, int(_value(performance, "wallpaper_width", 1024))),
             wallpaper_height=max(240, int(_value(performance, "wallpaper_height", 600))),
+        ),
+        udp_overlay=UdpOverlaySettings(
+            enabled=bool(
+                _value(
+                    udp_overlay,
+                    "enabled",
+                    os.getenv("HH_UDP_OVERLAY_ENABLED", "true").strip().lower()
+                    in {"1", "true", "yes", "on"},
+                )
+            ),
+            bind_host=str(
+                _value(
+                    udp_overlay,
+                    "bind_host",
+                    os.getenv("HH_UDP_OVERLAY_HOST", "0.0.0.0"),
+                )
+            ),
+            port=max(
+                1,
+                int(
+                    _value(
+                        udp_overlay,
+                        "port",
+                        os.getenv("HH_UDP_OVERLAY_PORT", "5005") or "5005",
+                    )
+                ),
+            ),
         ),
         weather_api_key=weather_api_key,
     )

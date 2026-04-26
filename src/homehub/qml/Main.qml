@@ -20,8 +20,9 @@ Window {
     property url itidalIcon: Qt.resolvedUrl("../assets/itidal.png")
     property url taslimIcon: Qt.resolvedUrl("../assets/taslim.png")
 
-    property int currentPoseIndex: root.dashboardModel ? root.dashboardModel.testSalahProgressIndex : 3
-    property int currentRakatIndex: root.dashboardModel ? root.dashboardModel.testRakatIndex : 1
+    property int currentPoseIndex: root.dashboardModel ? root.dashboardModel.displayedSalahProgressIndex : 0
+    property int currentRakatIndex: root.dashboardModel ? root.dashboardModel.currentRakatIndex : 0
+    property int selectedRakatIndex: root.dashboardModel ? root.dashboardModel.selectedRakatIndex : root.currentRakatIndex
     property var salahProgressStages: [
         { "label": "QIYAM", "icon": qiyamIcon },
         { "label": "RUKU", "icon": rukuIcon },
@@ -474,6 +475,9 @@ Window {
                                         height: 54
 
                                         property bool active: index <= root.currentPoseIndex
+                                        property bool missed: root.dashboardModel
+                                                              ? root.dashboardModel.missedProgressIndices.indexOf(index) !== -1
+                                                              : false
 
                                         Rectangle {
                                             width: 38
@@ -481,9 +485,9 @@ Window {
                                             radius: 19
                                             anchors.horizontalCenter: parent.horizontalCenter
                                             anchors.top: parent.top
-                                            color: active ? "#08f1d2" : "#3f464f"
+                                            color: missed ? "#ff6b6b" : (active ? "#08f1d2" : "#3f464f")
                                             border.width: 1
-                                            border.color: active ? "#08f1d2" : "#59626b"
+                                            border.color: missed ? "#ff6b6b" : (active ? "#08f1d2" : "#59626b")
 
                                             Image {
                                                 anchors.centerIn: parent
@@ -491,7 +495,7 @@ Window {
                                                 height: 22
                                                 source: modelData.icon
                                                 fillMode: Image.PreserveAspectFit
-                                                opacity: active ? 1.0 : 0.52
+                                                opacity: missed || active ? 1.0 : 0.52
                                             }
                                         }
 
@@ -499,7 +503,7 @@ Window {
                                             anchors.horizontalCenter: parent.horizontalCenter
                                             anchors.bottom: parent.bottom
                                             text: modelData.label
-                                            color: active ? "#f8fbff" : "#c5ced7"
+                                            color: missed ? "#ff9b9b" : (active ? "#f8fbff" : "#c5ced7")
                                             font.pixelSize: 12
                                             font.bold: true
                                         }
@@ -549,9 +553,9 @@ Window {
                                                 width: 50
                                                 height: 50
                                                 radius: 25
-                                                color: index <= root.currentRakatIndex ? "#08f1d2" : "#353c44"
+                                                color: index === root.selectedRakatIndex ? "#8cf4d9" : (index <= root.currentRakatIndex ? "#08f1d2" : "#353c44")
                                                 border.width: 1
-                                                border.color: index <= root.currentRakatIndex ? "#08f1d2" : "#59626b"
+                                                border.color: index === root.selectedRakatIndex ? "#ffffff" : (index <= root.currentRakatIndex ? "#08f1d2" : "#59626b")
                                                 anchors.horizontalCenter: parent.horizontalCenter
 
                                                 Text {
@@ -560,6 +564,15 @@ Window {
                                                     color: index <= root.currentRakatIndex ? "#09221b" : "#ffffff"
                                                     font.pixelSize: 26
                                                     font.bold: true
+                                                }
+
+                                                MouseArea {
+                                                    anchors.fill: parent
+                                                    onClicked: {
+                                                        if (root.dashboardModel) {
+                                                            root.dashboardModel.selectRakat(index)
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
@@ -618,6 +631,16 @@ Window {
                                     }
                                 }
                             }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: {
+                                    if (root.dashboardModel) {
+                                        root.dashboardModel.acknowledgePrayerAlert()
+                                    }
+                                    reminderPanel.opacity = 1.0
+                                }
+                            }
                         }
                     }
                 }
@@ -635,15 +658,6 @@ Window {
                     }
                 }
 
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: {
-                        if (root.dashboardModel) {
-                            root.dashboardModel.acknowledgePrayerAlert()
-                        }
-                        reminderPanel.opacity = 1.0
-                    }
-                }
             }
 
             Row {

@@ -16,6 +16,7 @@ from homehub.services.adhan_audio_service import AdhanAudioService
 from homehub.services.gps_service import GPSService
 from homehub.services.market_price_service import MarketPriceService
 from homehub.services.prayer_time_service import PrayerTimeService
+from homehub.services.udp_overlay_service import UdpOverlayService
 from homehub.services.weather_service import WeatherService
 from homehub.ui.backgrounds import (
     bundled_background_path,
@@ -66,6 +67,11 @@ class DashboardController(QObject):
         self.daily_images = DailySeasonalImageService()
         self.markets = MarketPriceService()
         self.adhan_audio = AdhanAudioService()
+        self.udp_overlay = UdpOverlayService(
+            enabled=self.settings.udp_overlay.enabled,
+            bind_host=self.settings.udp_overlay.bind_host,
+            port=self.settings.udp_overlay.port,
+        )
 
         self._time_text = "--:--"
         self._seconds_text = "--"
@@ -100,6 +106,12 @@ class DashboardController(QObject):
         self._daily_prayer_time_items: list[dict] = []
         self._test_pose_index = self._resolve_test_pose_index()
         self._test_rakat_index = self._resolve_test_rakat_index()
+        self._live_pose_index: int | None = None
+        self._live_rakat_index: int | None = None
+        self._missed_progress_indices: list[int] = []
+        self._selected_rakat_index: int | None = None
+        self._overlay_prayer_key = ""
+        self._rakat_progress_history: dict[int, dict[str, object]] = {}
         self._prayer_alert_threshold_minutes = max(
             1, int(os.getenv("HH_PRAYER_ALERT_MINUTES", "10") or "10")
         )
@@ -143,6 +155,7 @@ class DashboardController(QObject):
         self._timer.stop()
         self._active_adhan_marker = ""
         self._post_adhan_visible_until = None
+        self.udp_overlay.close()
         self.adhan_audio.stop()
 
     def refresh(self, force: bool = False) -> None:
@@ -211,6 +224,13 @@ class DashboardController(QObject):
                 item for item in self._market_items if item.get("section") == "STOCK"
             ]
             self._market_counter = 0
+
+        overlay_state = self.udp_overlay.poll_latest()
+        if overlay_state is not None:
+            next_pose_index = self._pose_index_from_stage_key(overlay_state.progress_stage_key)
+            next_rakat_index = self._rakat_index_from_number(overlay_state.current_rakat)
+            overlay_prayer_key = self._normalize_overlay_prayer_key(overlay_state.prayer_name)
+            self._update_live_progress_state(next_pose_index, next_rakat_index, overlay_prayer_key)
 
         prayer = self.prayer.get_status(now)
         self._daily_prayer_time_items = self.prayer.daily_prayer_times(now)
@@ -488,6 +508,55 @@ class DashboardController(QObject):
 
         return max(0, int(os.getenv("HH_TEST_RAKAT_INDEX", "1") or "1"))
 
+    def _pose_index_from_stage_key(self, stage_key: str) -> int | None:
+        normalized = self._normalize_progress_stage_name(stage_key)
+        if normalized in self._SALAH_PROGRESS_STAGE_KEYS:
+            return self._SALAH_PROGRESS_STAGE_KEYS.index(normalized)
+        return None
+
+    def _rakat_index_from_number(self, current_rakat: int) -> int:
+        return max(0, min(3, current_rakat - 1))
+
+    def _update_live_progress_state(
+        self,
+        next_pose_index: int | None,
+        next_rakat_index: int,
+        overlay_prayer_key: str,
+    ) -> None:
+        if overlay_prayer_key and overlay_prayer_key != self._overlay_prayer_key:
+            self._overlay_prayer_key = overlay_prayer_key
+            self._rakat_progress_history = {}
+            self._selected_rakat_index = None
+        elif self._live_rakat_index is not None and next_rakat_index < self._live_rakat_index:
+            self._rakat_progress_history = {}
+            self._selected_rakat_index = None
+
+        if next_pose_index is None:
+            self._live_rakat_index = next_rakat_index
+            return
+
+        rakat_state = self._rakat_progress_history.setdefault(
+            next_rakat_index,
+            {"pose_index": None, "missed_indices": []},
+        )
+        previous_pose_index = rakat_state["pose_index"]
+        missed_indices = list(rakat_state["missed_indices"])
+        if previous_pose_index is None or next_pose_index <= previous_pose_index:
+            missed_indices = []
+        elif next_pose_index > previous_pose_index + 1:
+            skipped = range(previous_pose_index + 1, next_pose_index)
+            missed_indices = sorted(set(missed_indices).union(skipped))
+
+        rakat_state["pose_index"] = next_pose_index
+        rakat_state["missed_indices"] = missed_indices
+        self._live_rakat_index = next_rakat_index
+        self._live_pose_index = next_pose_index
+        self._missed_progress_indices = missed_indices
+
+    def _normalize_overlay_prayer_key(self, prayer_name: str) -> str:
+        primary = prayer_name.split("/", 1)[0].strip().lower()
+        return primary
+
     def _normalize_progress_stage_name(self, stage_name: str) -> str:
         normalized = stage_name.strip().lower()
         normalized = normalized.replace("'", "")
@@ -712,12 +781,34 @@ class DashboardController(QObject):
         return self._daily_prayer_time_items
 
     @Property(int, notify=dataChanged)
-    def testSalahProgressIndex(self) -> int:
-        return self._test_pose_index
+    def currentSalahProgressIndex(self) -> int:
+        return self._live_pose_index if self._live_pose_index is not None else self._test_pose_index
 
     @Property(int, notify=dataChanged)
-    def testRakatIndex(self) -> int:
-        return self._test_rakat_index
+    def currentRakatIndex(self) -> int:
+        return self._live_rakat_index if self._live_rakat_index is not None else self._test_rakat_index
+
+    @Property(int, notify=dataChanged)
+    def selectedRakatIndex(self) -> int:
+        return self._selected_rakat_index if self._selected_rakat_index is not None else self.currentRakatIndex
+
+    @Property(int, notify=dataChanged)
+    def displayedSalahProgressIndex(self) -> int:
+        state = self._rakat_progress_history.get(self.selectedRakatIndex)
+        if state is not None:
+            pose_index = state.get("pose_index")
+            if isinstance(pose_index, int):
+                return pose_index
+        return self.currentSalahProgressIndex
+
+    @Property("QVariantList", notify=dataChanged)
+    def missedProgressIndices(self) -> list[int]:
+        state = self._rakat_progress_history.get(self.selectedRakatIndex)
+        if state is not None:
+            missed_indices = state.get("missed_indices")
+            if isinstance(missed_indices, list):
+                return missed_indices
+        return self._missed_progress_indices
 
     @Property(bool, notify=dataChanged)
     def prayerAlertActive(self) -> bool:
@@ -758,6 +849,13 @@ class DashboardController(QObject):
         if not self._missed_prayer_items:
             return
         self._missed_prayer_overlay_visible = True
+        self.dataChanged.emit()
+
+    @Slot(int)
+    def selectRakat(self, index: int) -> None:
+        if index < 0 or index > 4:
+            return
+        self._selected_rakat_index = index
         self.dataChanged.emit()
 
     @Slot()
