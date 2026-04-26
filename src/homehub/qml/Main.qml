@@ -343,7 +343,7 @@ Window {
 
                                     Text {
                                         anchors.horizontalCenter: parent.horizontalCenter
-                                        text: root.dashboardModel ? root.dashboardModel.nextSalahNameText : "PRAYER"
+                                        text: root.dashboardModel ? root.dashboardModel.currentSalahText : "PRAYER"
                                         color: "#08f1d2"
                                         font.pixelSize: 38
                                         font.bold: true
