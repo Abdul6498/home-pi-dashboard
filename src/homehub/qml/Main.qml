@@ -285,107 +285,93 @@ Window {
 
                     Item {
                         width: parent.width
-                        height: 86
+                        height: 96
 
-                        Column {
+                        Row {
                             anchors.fill: parent
-                            spacing: 8
+                            spacing: 12
 
-                            Item {
-                                width: parent.width
-                                height: 54
+                            Rectangle {
+                                width: 230
+                                height: parent.height
+                                radius: 14
+                                color: "transparent"
+                                border.width: 1
+                                border.color: "#364048"
 
-                                Row {
-                                    anchors.fill: parent
-                                    spacing: 8
+                                Column {
+                                    anchors.centerIn: parent
+                                    spacing: 1
 
-                                    Item {
-                                        width: parent.width * 0.26
-                                        height: parent.height
-
-                                        Rectangle {
-                                            width: 200
-                                            height: 52
-                                            anchors.centerIn: parent
-                                            radius: 12
-                                            color: "transparent"
-                                            border.width: 1
-                                            border.color: "#343d45"
-
-                                            Column {
-                                                anchors.centerIn: parent
-                                                spacing: 1
-
-                                                Text {
-                                                    anchors.horizontalCenter: parent.horizontalCenter
-                                                    text: root.dashboardModel ? root.dashboardModel.hijriMonthText : ""
-                                                    color: "#8cf4d9"
-                                                    font.pixelSize: 18
-                                                    font.bold: true
-                                                }
-
-                                                Text {
-                                                    anchors.horizontalCenter: parent.horizontalCenter
-                                                    text: root.dashboardModel ? root.dashboardModel.hijriDateText : ""
-                                                    color: "#f8fbff"
-                                                    font.pixelSize: 24
-                                                    font.bold: true
-                                                }
-
-                                                Text {
-                                                    anchors.horizontalCenter: parent.horizontalCenter
-                                                    text: root.dashboardModel ? root.dashboardModel.hijriYearText : ""
-                                                    color: "#d7e4ee"
-                                                    font.pixelSize: 15
-                                                    font.bold: true
-                                                }
-                                            }
-                                        }
+                                    Text {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        text: root.dashboardModel ? root.dashboardModel.hijriMonthText : ""
+                                        color: "#8cf4d9"
+                                        font.pixelSize: 18
+                                        font.bold: true
                                     }
 
-                                    Item {
-                                        width: parent.width * 0.48
-                                        height: parent.height
-
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: root.dashboardModel ? root.dashboardModel.currentSalahText : "PRAYER"
-                                            color: "#8cf4d9"
-                                            font.pixelSize: 38
-                                            font.bold: true
-                                        }
+                                    Text {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        text: root.dashboardModel ? root.dashboardModel.hijriDateText : ""
+                                        color: "#f8fbff"
+                                        font.pixelSize: 24
+                                        font.bold: true
                                     }
 
-                                    Item {
-                                        width: parent.width * 0.26
-                                        height: parent.height
+                                    Text {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        text: root.dashboardModel ? root.dashboardModel.hijriYearText : ""
+                                        color: "#d7e4ee"
+                                        font.pixelSize: 15
+                                        font.bold: true
+                                    }
+                                }
+                            }
 
-                                        Rectangle {
-                                            width: 200
-                                            height: 52
-                                            anchors.centerIn: parent
-                                            radius: 12
-                                            color: "transparent"
-                                            border.width: 1
-                                            border.color: "#343d45"
+                            Rectangle {
+                                width: parent.width - 484
+                                height: parent.height
+                                radius: 14
+                                color: "transparent"
+                                border.width: 1
+                                border.color: "#364048"
 
-                                            Column {
-                                                anchors.centerIn: parent
-                                                spacing: 2
+                                Column {
+                                    anchors.centerIn: parent
+                                    spacing: 10
+
+                                    Text {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        text: root.dashboardModel ? root.dashboardModel.currentSalahText : "PRAYER"
+                                        color: "#8cf4d9"
+                                        font.pixelSize: 38
+                                        font.bold: true
+                                    }
+
+                                    Row {
+                                        spacing: 8
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        visible: root.dashboardModel
+                                                 ? root.dashboardModel.currentPrayerBreakdownItems.length > 0
+                                                 : false
+
+                                        Repeater {
+                                            model: root.dashboardModel ? root.dashboardModel.currentPrayerBreakdownItems : []
+                                            delegate: Rectangle {
+                                                width: chipTextTop.implicitWidth + 18
+                                                height: 28
+                                                radius: 14
+                                                color: modelData.fillColor
+                                                border.width: 1
+                                                border.color: modelData.borderColor
 
                                                 Text {
-                                                    anchors.horizontalCenter: parent.horizontalCenter
-                                                    text: "PRAYER TIME"
-                                                    color: "#d7e4ee"
-                                                    font.pixelSize: 14
-                                                    font.bold: true
-                                                }
-
-                                                Text {
-                                                    anchors.horizontalCenter: parent.horizontalCenter
-                                                    text: root.dashboardModel ? root.dashboardModel.currentSalahTimeText : "--:--"
-                                                    color: "#f8fbff"
-                                                    font.pixelSize: 28
+                                                    id: chipTextTop
+                                                    anchors.centerIn: parent
+                                                    text: modelData.label
+                                                    color: modelData.accentColor
+                                                    font.pixelSize: 13
                                                     font.bold: true
                                                 }
                                             }
@@ -394,31 +380,32 @@ Window {
                                 }
                             }
 
-                            Row {
-                                spacing: 6
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                visible: root.dashboardModel
-                                         ? root.dashboardModel.currentPrayerBreakdownItems.length > 0
-                                         : false
+                            Rectangle {
+                                width: 230
+                                height: parent.height
+                                radius: 14
+                                color: "transparent"
+                                border.width: 1
+                                border.color: "#364048"
 
-                                Repeater {
-                                    model: root.dashboardModel ? root.dashboardModel.currentPrayerBreakdownItems : []
-                                    delegate: Rectangle {
-                                        width: chipTextTop.implicitWidth + 14
-                                        height: 22
-                                        radius: 11
-                                        color: modelData.fillColor
-                                        border.width: 1
-                                        border.color: modelData.borderColor
+                                Column {
+                                    anchors.centerIn: parent
+                                    spacing: 2
 
-                                        Text {
-                                            id: chipTextTop
-                                            anchors.centerIn: parent
-                                            text: modelData.label
-                                            color: modelData.accentColor
-                                            font.pixelSize: 10
-                                            font.bold: true
-                                        }
+                                    Text {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        text: "PRAYER TIME"
+                                        color: "#d7e4ee"
+                                        font.pixelSize: 14
+                                        font.bold: true
+                                    }
+
+                                    Text {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        text: root.dashboardModel ? root.dashboardModel.currentSalahTimeText : "--:--"
+                                        color: "#f8fbff"
+                                        font.pixelSize: 28
+                                        font.bold: true
                                     }
                                 }
                             }
@@ -521,7 +508,7 @@ Window {
                         Rectangle {
                             id: rakatPanel
                             width: (parent.width - 12) / 2
-                            height: 104
+                            height: 96
                             radius: 12
                             color: "transparent"
                             border.width: 1
@@ -577,7 +564,7 @@ Window {
                         Rectangle {
                             id: reminderPanel
                             width: (parent.width - 12) / 2
-                            height: 104
+                            height: 96
                             radius: 12
                             color: "transparent"
                             border.width: 1
