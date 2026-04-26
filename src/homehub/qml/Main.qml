@@ -82,7 +82,7 @@ Window {
                         width: 4
                         height: parent.height - 28
                         radius: 2
-                        color: "#9ef7dd"
+                        color: "#08f1d2"
                         anchors.left: parent.left
                         anchors.leftMargin: 10
                         anchors.verticalCenter: parent.verticalCenter
@@ -196,7 +196,7 @@ Window {
 
                         Text {
                             text: root.dashboardModel ? root.dashboardModel.secondsText : "--"
-                            color: "#c8f7ee"
+                            color: "#08f1d2"
                             font.pixelSize: 32
                             font.bold: true
                             anchors.bottom: parent.bottom
@@ -205,7 +205,7 @@ Window {
 
                         Text {
                             text: root.dashboardModel ? root.dashboardModel.periodText : "--"
-                            color: "#8ce9d4"
+                            color: "#08f1d2"
                             font.pixelSize: 30
                             font.bold: true
                             anchors.bottom: parent.bottom
@@ -306,7 +306,7 @@ Window {
                                     Text {
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         text: root.dashboardModel ? root.dashboardModel.hijriMonthText : ""
-                                        color: "#8cf4d9"
+                                        color: "#08f1d2"
                                         font.pixelSize: 18
                                         font.bold: true
                                     }
@@ -344,7 +344,7 @@ Window {
                                     Text {
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         text: root.dashboardModel ? root.dashboardModel.nextSalahNameText : "PRAYER"
-                                        color: "#8cf4d9"
+                                        color: "#08f1d2"
                                         font.pixelSize: 38
                                         font.bold: true
                                     }
@@ -395,8 +395,8 @@ Window {
                                     Text {
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         text: root.dashboardModel ? root.dashboardModel.nextSalahNameText : "NEXT PRAYER"
-                                        color: "#d7e4ee"
-                                        font.pixelSize: 14
+                                        color: "#08f1d2"
+                                        font.pixelSize: 20
                                         font.bold: true
                                     }
 
@@ -450,7 +450,7 @@ Window {
                                 width: (parent.width / Math.max(1, root.salahProgressStages.length - 1)) * Math.min(root.currentPoseIndex, root.salahProgressStages.length - 1)
                                 height: 4
                                 radius: 2
-                                color: "#8cf4d9"
+                                color: "#08f1d2"
                             }
 
                             Row {
@@ -473,9 +473,9 @@ Window {
                                             radius: 19
                                             anchors.horizontalCenter: parent.horizontalCenter
                                             anchors.top: parent.top
-                                            color: active ? "#8cf4d9" : "#3f464f"
+                                            color: active ? "#08f1d2" : "#3f464f"
                                             border.width: 1
-                                            border.color: active ? "#b7fff0" : "#59626b"
+                                            border.color: active ? "#08f1d2" : "#59626b"
 
                                             Image {
                                                 anchors.centerIn: parent
@@ -541,9 +541,9 @@ Window {
                                                 width: 50
                                                 height: 50
                                                 radius: 25
-                                                color: index <= root.currentRakatIndex ? "#8cf4d9" : "#353c44"
+                                                color: index <= root.currentRakatIndex ? "#08f1d2" : "#353c44"
                                                 border.width: 1
-                                                border.color: index <= root.currentRakatIndex ? "#b7fff0" : "#59626b"
+                                                border.color: index <= root.currentRakatIndex ? "#08f1d2" : "#59626b"
                                                 anchors.horizontalCenter: parent.horizontalCenter
 
                                                 Text {
@@ -579,7 +579,7 @@ Window {
                                     width: parent.width
 
                                     Text {
-                                        text: root.dashboardModel ? (root.dashboardModel.nextSalahText.split(" ")[0] + " / TIME LEFT") : "TIME LEFT"
+                                        text: root.dashboardModel ? (root.dashboardModel.nextSalahText.split(" ")[0] + " / TIME LEFT: ") : "TIME LEFT: "
                                         color: "#ffffff"
                                         font.pixelSize: 18
                                         font.bold: true
@@ -590,7 +590,7 @@ Window {
                                     Text {
                                         id: timeLeftValue
                                         text: root.dashboardModel ? root.dashboardModel.timeLeftText.replace(" LEFT", "") : "--:--"
-                                        color: "#f1f5f8"
+                                        color: "#08f1d2"
                                         font.pixelSize: 18
                                         font.bold: true
                                     }
@@ -606,7 +606,7 @@ Window {
                                         width: parent.width * root.timeProgressValue
                                         height: parent.height
                                         radius: 9
-                                        color: "#79f0d2"
+                                        color: "#08f1d2"
                                     }
                                 }
                             }
