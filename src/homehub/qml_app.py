@@ -86,6 +86,8 @@ class DashboardController(QObject):
         self._location_name = "Hessigheim"
 
         self._next_salah_text = "--"
+        self._next_salah_name_text = "--"
+        self._next_salah_time_only_text = "--:--"
         self._time_left_text = "--H --M"
         self._time_left_progress_value = 0.0
         self._current_salah_text = "--"
@@ -211,6 +213,8 @@ class DashboardController(QObject):
         self._current_prayer_breakdown_items = self._lookup_prayer_breakdown_items(prayer.current_salah)
         next_display = self._display_salah_name(prayer.next_salah)
         self._next_salah_text = f"{next_display} {prayer.next_time_text}".upper()
+        self._next_salah_name_text = next_display.upper()
+        self._next_salah_time_only_text = prayer.next_time_text.upper()
         self._time_left_text = f"{prayer.time_left_text} LEFT".upper()
         self._time_left_progress_value = prayer.time_left_progress
         was_alert_active = self._prayer_alert_active
@@ -617,6 +621,14 @@ class DashboardController(QObject):
     @Property(str, notify=dataChanged)
     def nextSalahText(self) -> str:
         return self._next_salah_text
+
+    @Property(str, notify=dataChanged)
+    def nextSalahNameText(self) -> str:
+        return self._next_salah_name_text
+
+    @Property(str, notify=dataChanged)
+    def nextSalahTimeOnlyText(self) -> str:
+        return self._next_salah_time_only_text
 
     @Property(str, notify=dataChanged)
     def timeLeftText(self) -> str:

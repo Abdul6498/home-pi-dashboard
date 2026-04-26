@@ -343,7 +343,7 @@ Window {
 
                                     Text {
                                         anchors.horizontalCenter: parent.horizontalCenter
-                                        text: root.dashboardModel ? root.dashboardModel.currentSalahText : "PRAYER"
+                                        text: root.dashboardModel ? root.dashboardModel.nextSalahNameText : "PRAYER"
                                         color: "#8cf4d9"
                                         font.pixelSize: 38
                                         font.bold: true
@@ -394,7 +394,7 @@ Window {
 
                                     Text {
                                         anchors.horizontalCenter: parent.horizontalCenter
-                                        text: "PRAYER TIME"
+                                        text: root.dashboardModel ? root.dashboardModel.nextSalahNameText : "NEXT PRAYER"
                                         color: "#d7e4ee"
                                         font.pixelSize: 14
                                         font.bold: true
@@ -402,7 +402,7 @@ Window {
 
                                     Text {
                                         anchors.horizontalCenter: parent.horizontalCenter
-                                        text: root.dashboardModel ? root.dashboardModel.currentSalahTimeText : "--:--"
+                                        text: root.dashboardModel ? root.dashboardModel.nextSalahTimeOnlyText : "--:--"
                                         color: "#f8fbff"
                                         font.pixelSize: 28
                                         font.bold: true
