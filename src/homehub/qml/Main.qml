@@ -40,6 +40,14 @@ Window {
     ]
     property real timeProgressValue: root.dashboardModel ? root.dashboardModel.timeLeftProgressValue : 0.0
 
+    function timeLeftAccent(progress) {
+        if (progress >= 0.75) return "#79f0d2"
+        if (progress >= 0.50) return "#8cf4d9"
+        if (progress >= 0.30) return "#ffd978"
+        if (progress >= 0.15) return "#ffb36b"
+        return "#ff7c7c"
+    }
+
     Rectangle {
         anchors.fill: parent
         color: "#000000"
@@ -590,7 +598,7 @@ Window {
                                     Text {
                                         id: timeLeftValue
                                         text: root.dashboardModel ? root.dashboardModel.timeLeftText.replace(" LEFT", "") : "--:--"
-                                        color: "#08f1d2"
+                                        color: root.timeLeftAccent(root.timeProgressValue)
                                         font.pixelSize: 18
                                         font.bold: true
                                     }
@@ -606,7 +614,7 @@ Window {
                                         width: parent.width * root.timeProgressValue
                                         height: parent.height
                                         radius: 9
-                                        color: "#08f1d2"
+                                        color: root.timeLeftAccent(root.timeProgressValue)
                                     }
                                 }
                             }

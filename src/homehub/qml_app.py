@@ -125,6 +125,10 @@ class DashboardController(QObject):
         self._active_adhan_marker = ""
         self._post_adhan_image_url = self._pick_post_adhan_image_url()
         self._post_adhan_visible_until: datetime | None = None
+        self._started_at = datetime.now()
+        self._test_adhan_after_seconds = self._resolve_test_adhan_after_seconds()
+        self._test_adhan_salah = self._resolve_test_adhan_salah()
+        self._test_adhan_played = False
 
         self._timer = QTimer(self)
         self._timer.timeout.connect(self.refresh)
@@ -241,19 +245,21 @@ class DashboardController(QObject):
                 if self._is_trackable_prayer_name(prayer.current_salah)
                 else None
             )
-            self._mark_prayer_missed_if_unacknowledged(
-                self._prayer_alert_marker,
-                prayer_name_override=missed_name_override,
-            )
+            if was_alert_active:
+                self._mark_prayer_missed_if_unacknowledged(
+                    self._prayer_alert_marker,
+                    prayer_name_override=missed_name_override,
+                )
             self._prayer_alert_marker = marker
             self._prayer_alert_active = False
+        generic_reminder_prayer = prayer.current_salah.strip().lower()
+        generic_reminder_active = generic_reminder_prayer in {"fajr", "dhuhr", "asr", "maghrib"}
         should_alert = (
-            prayer.next_salah != "N/A"
-            and prayer.next_salah != "Imsak"
+            generic_reminder_active
             and 0 <= prayer.time_left_minutes <= self._prayer_alert_threshold_minutes
         )
         if self._force_prayer_alert:
-            should_alert = prayer.next_salah not in {"N/A", "Imsak"}
+            should_alert = generic_reminder_active
 
         if current_is_isha:
             should_alert = self.prayer.isha_reminder_window_active(
@@ -262,8 +268,7 @@ class DashboardController(QObject):
                 duration_minutes=5,
             )
         should_auto_stop = (
-            prayer.next_salah != "N/A"
-            and prayer.next_salah != "Imsak"
+            generic_reminder_active
             and not self._force_prayer_alert
             and 0 <= prayer.time_left_minutes <= 1
         )
@@ -287,6 +292,7 @@ class DashboardController(QObject):
             self.adhan_audio.start_prayer_reminder()
         else:
             self.adhan_audio.stop_prayer_reminder()
+        self._play_test_adhan_if_due(now)
         self._play_adhan_if_due(now)
         self._update_post_adhan_image_state(now)
 
@@ -500,6 +506,20 @@ class DashboardController(QObject):
         }
         return aliases.get(normalized, normalized)
 
+    def _resolve_test_adhan_after_seconds(self) -> int | None:
+        raw = os.getenv("HH_TEST_ADHAN_AFTER_SECONDS", "").strip()
+        if not raw:
+            return None
+        try:
+            value = int(raw)
+        except ValueError:
+            return None
+        return value if value >= 0 else None
+
+    def _resolve_test_adhan_salah(self) -> str:
+        raw = os.getenv("HH_TEST_ADHAN_SALAH", "").strip()
+        return raw if raw else "Fajr"
+
     def _mark_prayer_missed_if_unacknowledged(
         self,
         marker: str,
@@ -547,6 +567,21 @@ class DashboardController(QObject):
                         continue
                     return path.resolve().as_uri()
         return ""
+
+    def _play_test_adhan_if_due(self, now: datetime) -> None:
+        if self._test_adhan_played or self._test_adhan_after_seconds is None:
+            return
+        if (now - self._started_at).total_seconds() < self._test_adhan_after_seconds:
+            return
+        salah_name = self._test_adhan_salah
+        marker = f"test:{salah_name.lower()}"
+        if marker == self._last_adhan_marker:
+            self._test_adhan_played = True
+            return
+        if self.adhan_audio.play_for_salah(salah_name):
+            self._last_adhan_marker = marker
+            self._active_adhan_marker = marker
+            self._test_adhan_played = True
 
     def _play_adhan_if_due(self, now: datetime) -> None:
         salah_name = self.prayer.due_salah_for_adhan(now)
