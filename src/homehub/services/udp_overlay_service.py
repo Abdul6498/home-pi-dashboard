@@ -8,6 +8,7 @@ import socket
 @dataclass(frozen=True)
 class OverlayFrameState:
     current_rakat: int
+    completed_rakats: int
     progress_stage_key: str
     prayer_name: str
     fsm_state: str
@@ -97,9 +98,14 @@ class UdpOverlayService:
             current_rakat = int(message.get("current_rakat", 1))
         except (TypeError, ValueError):
             current_rakat = 1
+        try:
+            completed_rakats = int(message.get("completed_rakats", 0))
+        except (TypeError, ValueError):
+            completed_rakats = 0
 
         return OverlayFrameState(
             current_rakat=max(1, current_rakat),
+            completed_rakats=max(0, completed_rakats),
             progress_stage_key=stage_key,
             prayer_name=str(message.get("prayer_name", "")).strip(),
             fsm_state=fsm_state,

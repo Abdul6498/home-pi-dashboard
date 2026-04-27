@@ -112,6 +112,7 @@ class DashboardController(QObject):
         self._selected_rakat_index: int | None = None
         self._overlay_prayer_key = ""
         self._rakat_progress_history: dict[int, dict[str, object]] = {}
+        self._completed_breakdown_counts_by_prayer: dict[str, set[int]] = {}
         self._prayer_alert_threshold_minutes = max(
             1, int(os.getenv("HH_PRAYER_ALERT_MINUTES", "10") or "10")
         )
@@ -179,6 +180,7 @@ class DashboardController(QObject):
             self._auto_closed_prayer_alert_marker = ""
             self._last_adhan_marker = ""
             self._active_adhan_marker = ""
+            self._completed_breakdown_counts_by_prayer = {}
             self.adhan_audio.stop_prayer_reminder()
 
         interval = max(1, self.settings.refresh.clock_seconds)
@@ -225,14 +227,21 @@ class DashboardController(QObject):
             ]
             self._market_counter = 0
 
+        prayer = self.prayer.get_status(now)
+
         overlay_state = self.udp_overlay.poll_latest()
         if overlay_state is not None:
             next_pose_index = self._pose_index_from_stage_key(overlay_state.progress_stage_key)
             next_rakat_index = self._rakat_index_from_number(overlay_state.current_rakat)
-            overlay_prayer_key = self._normalize_overlay_prayer_key(overlay_state.prayer_name)
+            overlay_prayer_key = self._normalize_overlay_prayer_key(
+                overlay_state.prayer_name,
+                prayer.current_salah,
+            )
             self._update_live_progress_state(next_pose_index, next_rakat_index, overlay_prayer_key)
-
-        prayer = self.prayer.get_status(now)
+            self._track_completed_breakdown_count(
+                overlay_prayer_key,
+                overlay_state.completed_rakats,
+            )
         self._daily_prayer_time_items = self.prayer.daily_prayer_times(now)
         self._current_salah_text = self._display_salah_name(prayer.current_salah).upper()
         self._current_salah_time_text = self.prayer.salah_time_text(prayer.current_salah, now).upper()
@@ -405,6 +414,7 @@ class DashboardController(QObject):
                 compact_parts.append(
                     {
                         "label": f"{part_label}: {rakats}",
+                        "rakats": rakats,
                         "accentColor": colors["accentColor"],
                         "borderColor": colors["borderColor"],
                         "fillColor": colors["fillColor"],
@@ -426,7 +436,21 @@ class DashboardController(QObject):
         items = self._prayer_breakdowns.get(key, [])
         if not isinstance(items, list):
             return []
-        return [item for item in items if isinstance(item, dict)]
+        completed_counts = self._completed_breakdown_counts_by_prayer.get(key, set())
+        result: list[dict] = []
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            highlighted = dict(item)
+            rakats = item.get("rakats")
+            is_completed = isinstance(rakats, int) and rakats in completed_counts
+            highlighted["highlighted"] = is_completed
+            if is_completed:
+                highlighted["fillColor"] = item.get("borderColor", item.get("fillColor", "#1cffffff"))
+                highlighted["borderColor"] = item.get("accentColor", item.get("borderColor", "#f6fbff"))
+                highlighted["accentColor"] = "#071814"
+            result.append(highlighted)
+        return result
 
     def _normalize_prayer_lookup_key(self, salah_name: str) -> str:
         key = salah_name.strip().lower()
@@ -569,9 +593,31 @@ class DashboardController(QObject):
             missed_indices = sorted(set(missed_indices).union(trailing_missing))
             rakat_state["missed_indices"] = missed_indices
 
-    def _normalize_overlay_prayer_key(self, prayer_name: str) -> str:
-        primary = prayer_name.split("/", 1)[0].strip().lower()
-        return primary
+    def _normalize_overlay_prayer_key(self, prayer_name: str, current_salah_name: str = "") -> str:
+        candidates = [
+            part.strip().lower()
+            for part in prayer_name.split("/")
+            if part.strip()
+        ]
+        current_key = self._normalize_prayer_lookup_key(current_salah_name)
+        if current_key and current_key in candidates:
+            return current_key
+        if candidates:
+            return candidates[0]
+        return ""
+
+    def _track_completed_breakdown_count(self, prayer_key: str, completed_rakats: int) -> None:
+        if not prayer_key or completed_rakats <= 0:
+            return
+        prayer_items = self._prayer_breakdowns.get(prayer_key, [])
+        available_counts = {
+            item.get("rakats")
+            for item in prayer_items
+            if isinstance(item, dict) and isinstance(item.get("rakats"), int)
+        }
+        if completed_rakats not in available_counts:
+            return
+        self._completed_breakdown_counts_by_prayer.setdefault(prayer_key, set()).add(completed_rakats)
 
     def _normalize_progress_stage_name(self, stage_name: str) -> str:
         normalized = stage_name.strip().lower()
