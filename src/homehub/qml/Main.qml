@@ -20,8 +20,8 @@ Window {
     property url itidalIcon: Qt.resolvedUrl("../assets/itidal.png")
     property url taslimIcon: Qt.resolvedUrl("../assets/taslim.png")
 
-    property int currentPoseIndex: root.dashboardModel ? root.dashboardModel.displayedSalahProgressIndex : 0
-    property int currentRakatIndex: root.dashboardModel ? root.dashboardModel.currentRakatIndex : 0
+    property int currentPoseIndex: root.dashboardModel ? root.dashboardModel.displayedSalahProgressIndex : -1
+    property int currentRakatIndex: root.dashboardModel ? root.dashboardModel.currentRakatIndex : -1
     property int selectedRakatIndex: root.dashboardModel ? root.dashboardModel.selectedRakatIndex : root.currentRakatIndex
     property var salahProgressStages: [
         { "label": "QIYAM", "icon": qiyamIcon },
@@ -33,11 +33,13 @@ Window {
         { "label": "TASLIM", "icon": taslimIcon }
     ]
     property var rakatStages: [
-        { "label": "Rakat 1", "value": "1" },
-        { "label": "Rakat 2", "value": "2" },
-        { "label": "Rakat 3", "value": "3" },
-        { "label": "Rakat 4", "value": "4" },
-        { "label": "Final", "value": "Ø" }
+        { "label": "Rakat 1", "value": "1", "stageIndex": 0, "selectable": true },
+        { "label": "Rakat 2", "value": "2", "stageIndex": 1, "selectable": true },
+        { "label": "Divider", "value": "-", "stageIndex": -1, "selectable": false },
+        { "label": "Rakat 3", "value": "3", "stageIndex": 2, "selectable": true },
+        { "label": "Rakat 4", "value": "4", "stageIndex": 3, "selectable": true },
+        { "label": "Final Spacer", "value": "", "stageIndex": -1, "selectable": false, "spacerWidth": 34 },
+        { "label": "Final", "value": "Ø", "stageIndex": 4, "selectable": true }
     ]
     property real timeProgressValue: root.dashboardModel ? root.dashboardModel.timeLeftProgressValue : 0.0
 
@@ -456,7 +458,7 @@ Window {
                                 anchors.left: parent.left
                                 anchors.top: parent.top
                                 anchors.topMargin: 34
-                                width: (parent.width / Math.max(1, root.salahProgressStages.length - 1)) * Math.min(root.currentPoseIndex, root.salahProgressStages.length - 1)
+                                width: (parent.width / Math.max(1, root.salahProgressStages.length - 1)) * Math.max(0, Math.min(root.currentPoseIndex, root.salahProgressStages.length - 1))
                                 height: 4
                                 radius: 2
                                 color: "#08f1d2"
@@ -548,29 +550,35 @@ Window {
                                         model: root.rakatStages
                                         delegate: Column {
                                             spacing: 4
+                                            property int stageIndex: modelData.stageIndex
+                                            property bool selectable: modelData.selectable
+                                            property int spacerWidth: modelData.spacerWidth ? modelData.spacerWidth : 0
+                                            property bool selected: selectable && stageIndex === root.selectedRakatIndex
+                                            property bool active: selectable && stageIndex <= root.currentRakatIndex
 
                                             Rectangle {
-                                                width: 50
-                                                height: 50
-                                                radius: 25
-                                                color: index === root.selectedRakatIndex ? "#8cf4d9" : (index <= root.currentRakatIndex ? "#08f1d2" : "#353c44")
-                                                border.width: 1
-                                                border.color: index === root.selectedRakatIndex ? "#ffffff" : (index <= root.currentRakatIndex ? "#08f1d2" : "#59626b")
+                                                width: selectable ? 50 : (spacerWidth > 0 ? spacerWidth : 24)
+                                                height: selectable ? 50 : 50
+                                                radius: selectable ? 25 : 0
+                                                color: !selectable ? "transparent" : (selected ? "#8cf4d9" : (active ? "#08f1d2" : "#353c44"))
+                                                border.width: selectable ? 1 : 0
+                                                border.color: selected ? "#ffffff" : (active ? "#08f1d2" : "#59626b")
                                                 anchors.horizontalCenter: parent.horizontalCenter
 
                                                 Text {
                                                     anchors.centerIn: parent
                                                     text: modelData.value
-                                                    color: index <= root.currentRakatIndex ? "#09221b" : "#ffffff"
-                                                    font.pixelSize: 26
+                                                    color: !selectable ? "#8aa0b5" : (active ? "#09221b" : "#ffffff")
+                                                    font.pixelSize: selectable ? 26 : 32
                                                     font.bold: true
                                                 }
 
                                                 MouseArea {
                                                     anchors.fill: parent
+                                                    enabled: selectable
                                                     onClicked: {
                                                         if (root.dashboardModel) {
-                                                            root.dashboardModel.selectRakat(index)
+                                                            root.dashboardModel.selectRakat(stageIndex)
                                                         }
                                                     }
                                                 }

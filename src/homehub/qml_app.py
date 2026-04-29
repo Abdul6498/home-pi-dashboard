@@ -510,7 +510,13 @@ class DashboardController(QObject):
             if normalized in self._SALAH_PROGRESS_STAGE_KEYS:
                 return self._SALAH_PROGRESS_STAGE_KEYS.index(normalized)
 
-        return max(0, int(os.getenv("HH_TEST_SALAH_PROGRESS_INDEX", "0") or "0"))
+        raw_index = os.getenv("HH_TEST_SALAH_PROGRESS_INDEX", "").strip()
+        if not raw_index:
+            return -1
+        try:
+            return max(0, int(raw_index))
+        except ValueError:
+            return -1
 
     def _resolve_test_rakat_index(self) -> int:
         rakat_number = os.getenv("HH_TEST_RAKAT_NUMBER", "").strip()
@@ -522,7 +528,13 @@ class DashboardController(QObject):
             except ValueError:
                 pass
 
-        return max(0, int(os.getenv("HH_TEST_RAKAT_INDEX", "0") or "0"))
+        raw_index = os.getenv("HH_TEST_RAKAT_INDEX", "").strip()
+        if not raw_index:
+            return -1
+        try:
+            return max(0, int(raw_index))
+        except ValueError:
+            return -1
 
     def _pose_index_from_stage_key(self, stage_key: str) -> int | None:
         normalized = self._normalize_progress_stage_name(stage_key)
