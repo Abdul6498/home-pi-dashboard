@@ -9,6 +9,7 @@ LOG_DIR="$ROOT_DIR/.runtime"
 LOG_FILE="$LOG_DIR/dashboard.log"
 APP_PATTERN="home-pi-dashboard|python -m homehub.main"
 SYSTEMD_SERVICE_NAME="${HOME_PI_DASHBOARD_SERVICE_NAME:-home-pi-dashboard.service}"
+REMOTE_NAME="${HOME_PI_DASHBOARD_GIT_REMOTE:-origin}"
 
 mkdir -p "$LOG_DIR"
 
@@ -23,11 +24,24 @@ if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
   exit 1
 fi
 
-echo "Fetching latest commits from origin/$BRANCH ..."
-git fetch origin "$BRANCH"
+echo "Fetching latest commits from $REMOTE_NAME/$BRANCH ..."
+if ! GIT_TERMINAL_PROMPT=0 git fetch "$REMOTE_NAME" "$BRANCH"; then
+  REMOTE_URL="$(git remote get-url "$REMOTE_NAME" 2>/dev/null || echo "$REMOTE_NAME")"
+  echo
+  echo "Auto-update failed while fetching from: $REMOTE_URL"
+  echo "This usually means the Git remote needs non-interactive authentication."
+  echo "For Raspberry Pi systemd auto-update, use one of these:"
+  echo "  1. Switch the repo remote to SSH"
+  echo "     git remote set-url $REMOTE_NAME git@github.com:Abdul6498/home-pi-dashboard.git"
+  echo "  2. Or configure a credential helper / PAT for HTTPS"
+  echo
+  echo "After fixing auth, test manually with:"
+  echo "  git fetch $REMOTE_NAME $BRANCH"
+  exit 1
+fi
 
 LOCAL_SHA="$(git rev-parse HEAD)"
-REMOTE_SHA="$(git rev-parse "origin/$BRANCH")"
+REMOTE_SHA="$(git rev-parse "$REMOTE_NAME/$BRANCH")"
 
 is_dashboard_running() {
   pgrep -u "$USER" -f "$APP_PATTERN" >/dev/null 2>&1
@@ -103,7 +117,7 @@ echo "Update found:"
 echo "  local : $LOCAL_SHA"
 echo "  remote: $REMOTE_SHA"
 echo "Pulling latest code ..."
-git pull --ff-only origin "$BRANCH"
+GIT_TERMINAL_PROMPT=0 git pull --ff-only "$REMOTE_NAME" "$BRANCH"
 
 echo "Restarting dashboard after update ..."
 restart_dashboard

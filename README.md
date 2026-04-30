@@ -305,6 +305,19 @@ Behavior:
 - restarts the dashboard if new code arrived
 - starts the app if it is not already running
 
+Important for GitHub remotes:
+
+- if your repo remote uses `https://github.com/...` and the repo requires authentication,
+  the systemd timer cannot answer username/password prompts
+- for unattended auto-update on Raspberry Pi, prefer an SSH remote:
+
+```bash
+git remote set-url origin git@github.com:Abdul6498/home-pi-dashboard.git
+ssh -T git@github.com
+```
+
+- if you want to stay on HTTPS, configure a credential helper or PAT first
+
 ## systemd user services on Pi
 
 ```bash
