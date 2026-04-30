@@ -10,9 +10,9 @@ font_family = "DejaVu Sans"
 
 [background]
 enabled = true
-mode = "black"
-use_daily_image = true
-default_image = "spring.jpg"
+mode = "daily"
+use_daily_image = false
+default_image = "islamic_wallpaper_1.jpg"
 
 [location]
 default_lat = 48.99407
