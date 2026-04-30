@@ -56,6 +56,14 @@ Window {
         color: "#000000"
     }
 
+    Image {
+        anchors.fill: parent
+        source: root.dashboardModel ? root.dashboardModel.backgroundImageUrl : ""
+        fillMode: Image.PreserveAspectCrop
+        smooth: true
+        visible: source !== ""
+    }
+
     Item {
         id: tabletShell
         anchors.fill: parent

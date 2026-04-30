@@ -325,15 +325,15 @@ class DashboardController(QObject):
         if self.settings.background.mode == "black":
             return ""
 
+        source_path = resolve_background_path(self.settings.background.default_image)
+        if source_path is not None:
+            return self._file_url_with_cache_buster(source_path)
+
         season = season_for_now()
         cache_dir = self.daily_images.cache_dir() / "optimized"
         source_path: Path | None = None
-
         if self.settings.background.use_daily_image:
             source_path = self.daily_images.get_daily_image_path(season.name)
-
-        if source_path is None:
-            source_path = resolve_background_path(self.settings.background.default_image)
 
         if source_path is None:
             bundled = bundled_background_path(season.background_asset)
@@ -348,9 +348,17 @@ class DashboardController(QObject):
                 height=self.settings.performance.wallpaper_height,
             )
             if optimized is not None:
-                return optimized.resolve().as_uri()
-            return source_path.resolve().as_uri()
+                return self._file_url_with_cache_buster(optimized)
+            return self._file_url_with_cache_buster(source_path)
         return ""
+
+    def _file_url_with_cache_buster(self, path: Path) -> str:
+        resolved = path.resolve()
+        try:
+            stamp = resolved.stat().st_mtime_ns
+        except OSError:
+            return resolved.as_uri()
+        return f"{resolved.as_uri()}?v={stamp}"
 
     def _icon_for_condition(self, condition: str) -> tuple[str, str]:
         if condition == "clear":

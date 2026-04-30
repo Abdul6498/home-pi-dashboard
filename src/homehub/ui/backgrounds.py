@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
 try:
@@ -22,10 +23,11 @@ def prepare_background_asset(
         return None
 
     cache_dir.mkdir(parents=True, exist_ok=True)
-    target_name = f"{source_path.stem}_{width}x{height}.jpg"
+    source_hash = _file_content_hash(source_path)
+    target_name = f"{source_path.stem}_{source_hash}_{width}x{height}.jpg"
     target_path = cache_dir / target_name
 
-    if target_path.exists() and target_path.stat().st_mtime >= source_path.stat().st_mtime:
+    if target_path.exists():
         return target_path
 
     try:
@@ -74,3 +76,11 @@ def _cover_resize(source: Image.Image, width: int, height: int) -> Image.Image:
     left = (resized.width - width) // 2
     top = (resized.height - height) // 2
     return resized.crop((left, top, left + width, top + height))
+
+
+def _file_content_hash(path: Path) -> str:
+    digest = hashlib.blake2s(digest_size=8)
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(65536), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
