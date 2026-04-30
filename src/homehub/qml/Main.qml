@@ -42,6 +42,7 @@ Window {
         { "label": "Final", "value": "Ø", "stageIndex": 4, "selectable": true }
     ]
     property real timeProgressValue: root.dashboardModel ? root.dashboardModel.timeLeftProgressValue : 0.0
+    property bool settingsMenuVisible: false
 
     function timeLeftAccent(progress) {
         if (progress >= 0.75) return "#79f0d2"
@@ -195,6 +196,7 @@ Window {
                 }
 
                 Rectangle {
+                    id: clockCard
                     width: parent.width - 218 - 190 - 24
                     height: parent.height
                     radius: 14
@@ -227,8 +229,38 @@ Window {
                             color: "#08f1d2"
                             font.pixelSize: 30
                             font.bold: true
+                            visible: text !== ""
                             anchors.bottom: parent.bottom
                             anchors.bottomMargin: 14
+                        }
+                    }
+
+                    Rectangle {
+                        id: settingsButton
+                        width: 42
+                        height: 34
+                        radius: 17
+                        anchors.top: parent.top
+                        anchors.right: parent.right
+                        anchors.topMargin: 10
+                        anchors.rightMargin: 12
+                        color: "#2608f1d2"
+                        border.width: 1
+                        border.color: "#4e8f9a"
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "SET"
+                            color: "#e8f6fb"
+                            font.pixelSize: 12
+                            font.bold: true
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                root.settingsMenuVisible = !root.settingsMenuVisible
+                            }
                         }
                     }
                 }
@@ -369,7 +401,7 @@ Window {
                                     }
 
                                     Row {
-                                        spacing: 8
+                                        spacing: 6
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         visible: root.dashboardModel
                                                  ? root.dashboardModel.currentPrayerBreakdownItems.length > 0
@@ -377,20 +409,22 @@ Window {
 
                                         Repeater {
                                             model: root.dashboardModel ? root.dashboardModel.currentPrayerBreakdownItems : []
-                                            delegate: Rectangle {
-                                                width: chipTextTop.implicitWidth + 18
-                                                height: 28
-                                                radius: 14
-                                                color: modelData.fillColor
-                                                border.width: 1
-                                                border.color: modelData.borderColor
+                                            delegate: Row {
+                                                spacing: 6
 
                                                 Text {
                                                     id: chipTextTop
-                                                    anchors.centerIn: parent
                                                     text: modelData.label
-                                                    color: modelData.accentColor
-                                                    font.pixelSize: 13
+                                                    color: modelData.highlighted ? "#08f1d2" : "#f3f7fb"
+                                                    font.pixelSize: 18
+                                                    font.bold: true
+                                                }
+
+                                                Text {
+                                                    visible: index < (root.dashboardModel ? root.dashboardModel.currentPrayerBreakdownItems.length - 1 : 0)
+                                                    text: "|"
+                                                    color: "#93a6b6"
+                                                    font.pixelSize: 18
                                                     font.bold: true
                                                 }
                                             }
@@ -788,6 +822,121 @@ Window {
     }
 
     Rectangle {
+        id: settingsMenuPopup
+        visible: root.settingsMenuVisible
+        width: 176
+        height: 108
+        radius: 12
+        color: "#f1151b20"
+        border.width: 1
+        border.color: "#4e8f9a"
+        x: contentArea.x + headerRow.x + clockCard.x + clockCard.width - width - 12
+        y: contentArea.y + headerRow.y + settingsButton.y + settingsButton.height + 10
+        z: 20
+
+        Column {
+            anchors.fill: parent
+            anchors.margins: 10
+            spacing: 8
+
+            Rectangle {
+                width: parent.width
+                height: 30
+                radius: 8
+                color: "#20304f54"
+                border.width: 1
+                border.color: "#3d6a74"
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "Change Wallpaper"
+                    color: "#f3fbff"
+                    font.pixelSize: 13
+                    font.bold: true
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        if (root.dashboardModel) {
+                            root.dashboardModel.chooseBackgroundImage()
+                        }
+                        root.settingsMenuVisible = false
+                    }
+                }
+            }
+
+            Row {
+                width: parent.width
+                spacing: 8
+
+                Rectangle {
+                    width: (parent.width - 8) / 2
+                    height: 30
+                    radius: 8
+                    color: root.dashboardModel && !root.dashboardModel.use24HourClock ? "#3a08f1d2" : "#20304f54"
+                    border.width: 1
+                    border.color: root.dashboardModel && !root.dashboardModel.use24HourClock ? "#8cf4d9" : "#3d6a74"
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "12 Hour"
+                        color: "#f3fbff"
+                        font.pixelSize: 12
+                        font.bold: true
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            if (root.dashboardModel) {
+                                root.dashboardModel.setClock12Hour()
+                            }
+                            root.settingsMenuVisible = false
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: (parent.width - 8) / 2
+                    height: 30
+                    radius: 8
+                    color: root.dashboardModel && root.dashboardModel.use24HourClock ? "#3a08f1d2" : "#20304f54"
+                    border.width: 1
+                    border.color: root.dashboardModel && root.dashboardModel.use24HourClock ? "#8cf4d9" : "#3d6a74"
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "24 Hour"
+                        color: "#f3fbff"
+                        font.pixelSize: 12
+                        font.bold: true
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            if (root.dashboardModel) {
+                                root.dashboardModel.setClock24Hour()
+                            }
+                            root.settingsMenuVisible = false
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        z: 19
+        visible: root.settingsMenuVisible
+        onClicked: {
+            root.settingsMenuVisible = false
+        }
+    }
+
+    Rectangle {
         anchors.fill: parent
         color: "#f0000000"
         visible: root.dashboardModel ? root.dashboardModel.showPostAdhanImage : false
@@ -811,4 +960,5 @@ Window {
             }
         }
     }
+
 }

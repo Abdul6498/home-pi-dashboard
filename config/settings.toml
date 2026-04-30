@@ -12,8 +12,7 @@ font_family = "DejaVu Sans"
 enabled = true
 mode = "daily"
 use_daily_image = false
-default_image = "islamic_wallpaper_1.jpg"
-
+default_image = "assets/seasonal/spring.jpg"
 [location]
 default_lat = 48.99407
 default_lon = 9.18629
@@ -29,3 +28,6 @@ clock_seconds = 1
 weather_seconds = 900
 gps_seconds = 90
 market_seconds = 300
+
+[clock_display]
+use_24_hour = false

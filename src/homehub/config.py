@@ -30,6 +30,11 @@ class ThemeSettings:
 
 
 @dataclass(frozen=True)
+class ClockDisplaySettings:
+    use_24_hour: bool
+
+
+@dataclass(frozen=True)
 class BackgroundSettings:
     enabled: bool
     mode: str
@@ -80,6 +85,7 @@ class UdpOverlaySettings:
 class Settings:
     app: AppSettings
     theme: ThemeSettings
+    clock_display: ClockDisplaySettings
     background: BackgroundSettings
     location: LocationSettings
     modules: ModuleSettings
@@ -112,6 +118,7 @@ def load_settings(config_path: Path | None = None) -> Settings:
 
     app = _section(data, "app")
     theme = _section(data, "theme")
+    clock_display = _section(data, "clock_display")
     background = _section(data, "background")
     location = _section(data, "location")
     modules = _section(data, "modules")
@@ -131,6 +138,9 @@ def load_settings(config_path: Path | None = None) -> Settings:
         theme=ThemeSettings(
             name=str(_value(theme, "name", "crystal")),
             font_family=str(_value(theme, "font_family", "DejaVu Sans")),
+        ),
+        clock_display=ClockDisplaySettings(
+            use_24_hour=bool(_value(clock_display, "use_24_hour", False)),
         ),
         background=BackgroundSettings(
             enabled=bool(_value(background, "enabled", True)),

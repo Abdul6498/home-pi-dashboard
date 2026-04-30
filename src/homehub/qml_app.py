@@ -6,6 +6,7 @@ from pathlib import Path
 import os
 import platform
 import sys
+from urllib.parse import unquote, urlparse
 
 from homehub.config import load_settings
 from homehub.modules.clock import ClockModule
@@ -27,8 +28,8 @@ from homehub.ui.seasonal import season_for_now
 
 try:
     from PySide6.QtCore import QObject, Property, QTimer, Signal, Qt, Slot
-    from PySide6.QtGui import QGuiApplication
     from PySide6.QtQml import QQmlApplicationEngine
+    from PySide6.QtWidgets import QApplication, QFileDialog
 except ModuleNotFoundError as exc:  # pragma: no cover
     raise RuntimeError(
         "PySide6 is required for the QML UI. Install with: pip install -e .[dev]"
@@ -50,7 +51,8 @@ class DashboardController(QObject):
     def __init__(self) -> None:
         super().__init__()
         self.settings = load_settings()
-        self.clock = ClockModule()
+        self._use_24_hour_clock = self.settings.clock_display.use_24_hour
+        self.clock = ClockModule(use_24_hour=self._use_24_hour_clock)
         self.weather = WeatherModule(WeatherService(self.settings.weather_api_key))
         self.gps = GPSModule(
             GPSService(
@@ -151,6 +153,43 @@ class DashboardController(QObject):
         self._gps_counter = 0
         self._market_counter = 0
         self.refresh(force=True)
+
+    @property
+    def _settings_file_path(self) -> Path:
+        return Path(os.getenv("HH_CONFIG", "config/settings.toml")).expanduser()
+
+    def _persist_section(self, section_name: str, section_lines: list[str]) -> None:
+        config_path = self._settings_file_path
+        if not config_path.is_absolute():
+            config_path = (Path.cwd() / config_path).resolve()
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+
+        lines: list[str] = []
+        if config_path.exists():
+            lines = config_path.read_text(encoding="utf-8").splitlines()
+
+        start_index = None
+        end_index = None
+        section_header = f"[{section_name}]"
+        for index, line in enumerate(lines):
+            if line.strip() == section_header:
+                start_index = index
+                end_index = len(lines)
+                for next_index in range(index + 1, len(lines)):
+                    stripped = lines[next_index].strip()
+                    if stripped.startswith("[") and stripped.endswith("]"):
+                        end_index = next_index
+                        break
+                break
+
+        if start_index is None:
+            if lines and lines[-1].strip():
+                lines.append("")
+            lines.extend(section_lines)
+        else:
+            lines[start_index:end_index] = section_lines
+
+        config_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     def shutdown(self) -> None:
         self._timer.stop()
@@ -351,6 +390,28 @@ class DashboardController(QObject):
                 return self._file_url_with_cache_buster(optimized)
             return self._file_url_with_cache_buster(source_path)
         return ""
+
+    def _persist_background_selection(self, image_path: Path) -> None:
+        image_setting_value = self._serialize_background_setting_path(image_path)
+        self._persist_section(
+            "background",
+            [
+            "[background]",
+            "enabled = true",
+            'mode = "daily"',
+            "use_daily_image = false",
+            f'default_image = "{image_setting_value}"',
+            ],
+        )
+
+    def _serialize_background_setting_path(self, image_path: Path) -> str:
+        resolved = image_path.resolve()
+        repo_root = Path(__file__).resolve().parents[2]
+        try:
+            relative = resolved.relative_to(repo_root)
+        except ValueError:
+            return str(resolved)
+        return relative.as_posix()
 
     def _file_url_with_cache_buster(self, path: Path) -> str:
         resolved = path.resolve()
@@ -743,6 +804,10 @@ class DashboardController(QObject):
     def periodText(self) -> str:
         return self._period_text
 
+    @Property(bool, notify=dataChanged)
+    def use24HourClock(self) -> bool:
+        return self._use_24_hour_clock
+
     @Property(str, notify=dataChanged)
     def secondsText(self) -> str:
         return self._seconds_text
@@ -921,6 +986,56 @@ class DashboardController(QObject):
         self._selected_rakat_index = index
         self.dataChanged.emit()
 
+    @Slot(str)
+    def setBackgroundImage(self, file_url: str) -> None:
+        if not file_url.strip():
+            return
+        parsed = urlparse(file_url)
+        if parsed.scheme == "file":
+            image_path = Path(unquote(parsed.path))
+        else:
+            image_path = Path(file_url).expanduser()
+        if not image_path.exists() or not image_path.is_file():
+            return
+
+        resolved = image_path.resolve()
+        self._persist_background_selection(resolved)
+        self._background_image_url = self._file_url_with_cache_buster(resolved)
+        self.dataChanged.emit()
+
+    @Slot()
+    def chooseBackgroundImage(self) -> None:
+        start_dir = str(Path.home() / "Pictures")
+        file_path, _selected_filter = QFileDialog.getOpenFileName(
+            None,
+            "Select Background Image",
+            start_dir,
+            "Images (*.png *.jpg *.jpeg *.webp)",
+        )
+        if not file_path:
+            return
+        self.setBackgroundImage(file_path)
+
+    def _apply_clock_mode(self, enabled: bool) -> None:
+        self._use_24_hour_clock = enabled
+        self.clock.set_use_24_hour(enabled)
+        self._persist_section(
+            "clock_display",
+            [
+                "[clock_display]",
+                f"use_24_hour = {'true' if enabled else 'false'}",
+            ],
+        )
+        self.refresh(force=True)
+
+    @Slot()
+    def setClock12Hour(self) -> None:
+        self._apply_clock_mode(False)
+
+    @Slot()
+    def setClock24Hour(self) -> None:
+        self._apply_clock_mode(True)
+
     @Slot()
     def hideMissedPrayerOverlay(self) -> None:
         self._missed_prayer_overlay_visible = False
@@ -966,7 +1081,7 @@ class DashboardController(QObject):
 def run() -> int:
     settings = load_settings()
     _configure_qt_backend(settings)
-    app = QGuiApplication(sys.argv)
+    app = QApplication(sys.argv)
     controller = DashboardController()
     app.aboutToQuit.connect(controller.shutdown)
 
@@ -985,7 +1100,7 @@ def run() -> int:
     return app.exec()
 
 
-def _apply_test_screen(window, app: QGuiApplication) -> None:
+def _apply_test_screen(window, app: QApplication) -> None:
     raw_screen = os.getenv("HH_TEST_SCREEN", "").strip()
     if not raw_screen:
         return
