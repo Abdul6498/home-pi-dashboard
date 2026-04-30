@@ -136,7 +136,7 @@ class DashboardController(QObject):
         self._background_day = datetime.now().date()
         self._last_adhan_marker = ""
         self._active_adhan_marker = ""
-        self._post_adhan_image_url = self._pick_post_adhan_image_url()
+        self._post_adhan_image_url = ""
         self._post_adhan_visible_until: datetime | None = None
         self._started_at = datetime.now()
         self._test_adhan_after_seconds = self._resolve_test_adhan_after_seconds()
@@ -702,21 +702,6 @@ class DashboardController(QObject):
         return self._display_salah_name(prayer_key).upper() if prayer_key else ""
 
     def _pick_post_adhan_image_url(self) -> str:
-        asset_roots = [
-            Path(__file__).resolve().parents[1] / "assets",
-            Path(__file__).resolve().parents[2] / "assets",
-        ]
-        for assets_dir in asset_roots:
-            if not assets_dir.exists():
-                continue
-            for pattern in ("*.png", "*.jpg", "*.jpeg", "*.webp"):
-                for path in sorted(assets_dir.glob(pattern)):
-                    return path.resolve().as_uri()
-            for pattern in ("*.png", "*.jpg", "*.jpeg", "*.webp"):
-                for path in sorted(assets_dir.rglob(pattern)):
-                    if "seasonal" in path.parts:
-                        continue
-                    return path.resolve().as_uri()
         return ""
 
     def _play_test_adhan_if_due(self, now: datetime) -> None:
@@ -747,12 +732,8 @@ class DashboardController(QObject):
 
     def _update_post_adhan_image_state(self, now: datetime) -> None:
         if self._active_adhan_marker and not self.adhan_audio.is_playing():
-            if self._post_adhan_image_url:
-                self._post_adhan_visible_until = now + timedelta(minutes=1)
             self._active_adhan_marker = ""
-
-        if self._post_adhan_visible_until and now >= self._post_adhan_visible_until:
-            self._post_adhan_visible_until = None
+        self._post_adhan_visible_until = None
 
     @Property(str, notify=dataChanged)
     def timeText(self) -> str:
