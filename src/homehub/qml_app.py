@@ -6,6 +6,7 @@ from pathlib import Path
 import os
 import platform
 import sys
+import tomllib
 from urllib.parse import unquote, urlparse
 
 from homehub.config import load_settings
@@ -47,6 +48,7 @@ class DashboardController(QObject):
         "sajda_2",
         "taslim",
     )
+    _LEGACY_SPRING_BACKGROUNDS = {"spring.jpg", "assets/seasonal/spring.jpg"}
 
     def __init__(self) -> None:
         super().__init__()
@@ -134,7 +136,10 @@ class DashboardController(QObject):
         self._crypto_items: list[dict] = []
         self._stock_items: list[dict] = []
         self._prayer_breakdowns = self._load_prayer_breakdowns()
-        self._selected_background_setting = self.settings.background.default_image
+        self._background_enabled = self.settings.background.enabled
+        self._background_mode = self.settings.background.mode
+        self._background_use_daily_image = self.settings.background.use_daily_image
+        self._selected_background_setting = self._resolve_initial_background_setting()
         self._background_image_url = self._pick_background_url()
         self._background_day = datetime.now().date()
         self._last_adhan_marker = ""
@@ -163,10 +168,48 @@ class DashboardController(QObject):
         base_config_path = Path(os.getenv("HH_CONFIG", "config/settings.toml")).expanduser()
         return base_config_path.with_name("settings.local.toml")
 
+    @property
+    def _base_settings_file_path(self) -> Path:
+        return Path(os.getenv("HH_CONFIG", "config/settings.toml")).expanduser()
+
+    def _resolve_config_path(self, path: Path) -> Path:
+        if path.is_absolute():
+            return path.resolve()
+        return (Path.cwd() / path).resolve()
+
+    def _read_base_background_default_image(self) -> str:
+        config_path = self._resolve_config_path(self._base_settings_file_path)
+        if not config_path.exists():
+            return ""
+        try:
+            with config_path.open("rb") as handle:
+                payload = tomllib.load(handle)
+        except (OSError, tomllib.TOMLDecodeError):
+            return ""
+        background = payload.get("background", {})
+        if not isinstance(background, dict):
+            return ""
+        value = background.get("default_image", "")
+        return str(value).strip()
+
+    def _resolve_initial_background_setting(self) -> str:
+        selected = self.settings.background.default_image
+        base_default = self._read_base_background_default_image()
+        if (
+            selected in self._LEGACY_SPRING_BACKGROUNDS
+            and base_default
+            and base_default not in self._LEGACY_SPRING_BACKGROUNDS
+        ):
+            self._background_enabled = True
+            self._background_mode = "daily"
+            self._background_use_daily_image = False
+            self._persist_background_selection_setting(base_default)
+            return base_default
+        return selected
+
     def _persist_section(self, section_name: str, section_lines: list[str]) -> None:
         config_path = self._settings_file_path
-        if not config_path.is_absolute():
-            config_path = (Path.cwd() / config_path).resolve()
+        config_path = self._resolve_config_path(config_path)
         config_path.parent.mkdir(parents=True, exist_ok=True)
 
         lines: list[str] = []
@@ -364,9 +407,9 @@ class DashboardController(QObject):
         self.dataChanged.emit()
 
     def _pick_background_url(self) -> str:
-        if not self.settings.background.enabled:
+        if not self._background_enabled:
             return ""
-        if self.settings.background.mode == "black":
+        if self._background_mode == "black":
             return ""
 
         source_path = resolve_background_path(self._selected_background_setting)
@@ -376,7 +419,7 @@ class DashboardController(QObject):
         season = season_for_now()
         cache_dir = self.daily_images.cache_dir() / "optimized"
         source_path: Path | None = None
-        if self.settings.background.use_daily_image:
+        if self._background_use_daily_image:
             source_path = self.daily_images.get_daily_image_path(season.name)
 
         if source_path is None:
@@ -396,8 +439,7 @@ class DashboardController(QObject):
             return self._file_url_with_cache_buster(source_path)
         return ""
 
-    def _persist_background_selection(self, image_path: Path) -> None:
-        image_setting_value = self._serialize_background_setting_path(image_path)
+    def _persist_background_selection_setting(self, image_setting_value: str) -> None:
         self._persist_section(
             "background",
             [
@@ -408,6 +450,11 @@ class DashboardController(QObject):
             f'default_image = "{image_setting_value}"',
             ],
         )
+
+    def _persist_background_selection(self, image_path: Path) -> str:
+        image_setting_value = self._serialize_background_setting_path(image_path)
+        self._persist_background_selection_setting(image_setting_value)
+        return image_setting_value
 
     def _serialize_background_setting_path(self, image_path: Path) -> str:
         resolved = image_path.resolve()
@@ -1004,13 +1051,11 @@ class DashboardController(QObject):
             return
 
         resolved = image_path.resolve()
-        serialized_path = self._serialize_background_setting_path(resolved)
+        serialized_path = self._persist_background_selection(resolved)
+        self._background_enabled = True
+        self._background_mode = "daily"
+        self._background_use_daily_image = False
         self._selected_background_setting = serialized_path
-        self.settings.background.default_image = serialized_path
-        self.settings.background.use_daily_image = False
-        self.settings.background.mode = "daily"
-        self.settings.background.enabled = True
-        self._persist_background_selection(resolved)
         self._background_image_url = self._file_url_with_cache_buster(resolved)
         self.dataChanged.emit()
 
