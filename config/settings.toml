@@ -12,7 +12,7 @@ font_family = "DejaVu Sans"
 enabled = true
 mode = "daily"
 use_daily_image = false
-default_image = "assets/seasonal/spring.jpg"
+default_image = "assets/islamic_wallpaper_1.jpg"
 [location]
 default_lat = 48.99407
 default_lon = 9.18629

@@ -134,6 +134,7 @@ class DashboardController(QObject):
         self._crypto_items: list[dict] = []
         self._stock_items: list[dict] = []
         self._prayer_breakdowns = self._load_prayer_breakdowns()
+        self._selected_background_setting = self.settings.background.default_image
         self._background_image_url = self._pick_background_url()
         self._background_day = datetime.now().date()
         self._last_adhan_marker = ""
@@ -364,7 +365,7 @@ class DashboardController(QObject):
         if self.settings.background.mode == "black":
             return ""
 
-        source_path = resolve_background_path(self.settings.background.default_image)
+        source_path = resolve_background_path(self._selected_background_setting)
         if source_path is not None:
             return self._file_url_with_cache_buster(source_path)
 
@@ -999,6 +1000,12 @@ class DashboardController(QObject):
             return
 
         resolved = image_path.resolve()
+        serialized_path = self._serialize_background_setting_path(resolved)
+        self._selected_background_setting = serialized_path
+        self.settings.background.default_image = serialized_path
+        self.settings.background.use_daily_image = False
+        self.settings.background.mode = "daily"
+        self.settings.background.enabled = True
         self._persist_background_selection(resolved)
         self._background_image_url = self._file_url_with_cache_buster(resolved)
         self.dataChanged.emit()
