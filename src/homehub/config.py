@@ -102,6 +102,16 @@ def _read_toml(config_path: Path) -> dict:
         return tomllib.load(handle)
 
 
+def _merge_dicts(base: dict, override: dict) -> dict:
+    merged = dict(base)
+    for key, value in override.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = _merge_dicts(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
+
+
 def _section(data: dict, key: str) -> dict:
     value = data.get(key, {})
     return value if isinstance(value, dict) else {}
@@ -115,6 +125,12 @@ def _value(section_data: dict, key: str, default):
 def load_settings(config_path: Path | None = None) -> Settings:
     config_file = config_path or Path(os.getenv("HH_CONFIG", "config/settings.toml"))
     data = _read_toml(config_file)
+    local_config_env = os.getenv("HH_LOCAL_CONFIG", "").strip()
+    if local_config_env:
+        local_config_file = Path(local_config_env)
+    else:
+        local_config_file = config_file.with_name("settings.local.toml")
+    data = _merge_dicts(data, _read_toml(local_config_file))
 
     app = _section(data, "app")
     theme = _section(data, "theme")

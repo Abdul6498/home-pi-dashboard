@@ -214,6 +214,9 @@ Current useful `.env` knobs:
 # Optional alternate config path
 # HH_CONFIG=config/settings.toml
 
+# Optional device-local override file for runtime UI settings
+# HH_LOCAL_CONFIG=config/settings.local.toml
+
 # Temporary adhan test
 # HH_TEST_ADHAN_AFTER_SECONDS=15
 # HH_TEST_ADHAN_SALAH=Fajr

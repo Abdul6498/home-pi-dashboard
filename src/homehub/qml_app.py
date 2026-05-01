@@ -157,7 +157,11 @@ class DashboardController(QObject):
 
     @property
     def _settings_file_path(self) -> Path:
-        return Path(os.getenv("HH_CONFIG", "config/settings.toml")).expanduser()
+        local_config_env = os.getenv("HH_LOCAL_CONFIG", "").strip()
+        if local_config_env:
+            return Path(local_config_env).expanduser()
+        base_config_path = Path(os.getenv("HH_CONFIG", "config/settings.toml")).expanduser()
+        return base_config_path.with_name("settings.local.toml")
 
     def _persist_section(self, section_name: str, section_lines: list[str]) -> None:
         config_path = self._settings_file_path
